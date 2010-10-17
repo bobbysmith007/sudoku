@@ -23,20 +23,24 @@ very_hard_puzzle = """
     3 4  
 """
 
+PVALS = range(1,10)
+PIDXS = range(0,9)
+
+
 def tryint(v):
     try: return int(v)
     except: return None
 
 def read_puzzle (s):
-    puzzle = [[range(1,10) for j in range(0,9)]
-                   for i in range(0,9)]
+    puzzle = [[PVALS for j in PIDXS]
+                   for i in PIDXS]
     partial_sol = s.splitlines()[1:]#skip first/last line
     i,j=0,0
     for row in partial_sol:
         j=0
         if i>8: continue
         for char in row:
-            print i,j
+            #print i,j,char
             if j>8: continue
             if tryint(char): puzzle[i][j] = int(char)
             j+=1
@@ -61,11 +65,11 @@ class Sudoku (object):
         new_constraint = [True]
         def fn():
             new_constraint[0] = False
-            for i in range(0,9):
-                for j in range(0,9):
+            for i in PIDXS:
+                for j in PIDXS:
                     #already solved square
                     if isinstance(self.puzzle[i][j], int): continue
-                    p = set(range(1,10)) - self.index_constraints(i,j)
+                    p = set(PVALS) - self.index_constraints(i,j)
                     if len(p)==1:
                         p = p.pop()
                         print "found constraint:",i,j,p
@@ -77,10 +81,10 @@ class Sudoku (object):
 
     def index_constraints(self,row,col):
         knowns = set()
-        for i in range(0,9):
+        for i in PIDXS:
             if isinstance( self.puzzle[i][col], int):
                 knowns.add( self.puzzle[i][col] )
-        for i in range(0,9):
+        for i in PIDXS:
             if isinstance( self.puzzle[row][i], int):
                 knowns.add( self.puzzle[row][i] )
         for i,j in square(row,col):
@@ -88,12 +92,21 @@ class Sudoku (object):
                 knowns.add( self.puzzle[i][j] )
         return knowns
 
+    def is_solved(self):
+        for i,j in cross(PIDXS,PIDXS):
+            if not isinstance(self.puzzle[i][j], int):
+                return False
+        return True
+
     def __str__(self):
         s = StringIO()
+        if self.is_solved():
+            s.write("-------------------\n")
+            s.write('Solved Puzzle: \n')
         s.write("-------------------\n")
-        for i in range(0,9):
+        for i in PIDXS:
             s.write('|')
-            for j in range(0,9):
+            for j in PIDXS:
                 if isinstance( self.puzzle[i][j], int):
                     s.write( self.puzzle[i][j] )
                 else: s.write( ' ' )
