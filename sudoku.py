@@ -1,29 +1,10 @@
 from StringIO import StringIO
+import cProfile, pstats
+import logging
 from copy import deepcopy
+import puzzles
 
-medium_puzzle = """
-4 61     
-32 6 7  5
-51
-2 4   3
- 679 258
-  3   2 7
-       79
-6  5 4 32
-     86 1
-"""
-
-very_hard_puzzle = """
-  6 5
- 1   4 6
-49 1   23
- 79 6   5
- 5  1  3 
-1   9 87
-73   8 91
- 6 9   8 
-    3 4  
-"""
+logging.basicConfig(level=logging.info)
 
 PVALS = range(1,10)
 PIDXS = range(0,9)
@@ -57,15 +38,18 @@ def square(row, col):
 
 def solve_puzzle(s):
     s = read_puzzle(s)
-    print s
     s.solve()
-    print s
+    #print s
+    print s.status()
+    assert s.is_solved()
     return s
 
+def solve_some_puzzles():
+    for i in range(0,3):
+        for p in puzzles.puzzles:
+            s = solve_puzzle(p)
+
 class NoPossibleValues(Exception): pass
-class Solution(Exception):
-    def __init__(self,solution):
-        self.solution = solution
 
 class Box (object):
     def __init__(self, row, column, val):
@@ -83,14 +67,18 @@ class Sudoku (object):
         self.parent = parent
         self.children = []
         self.count = 1
+        self.constraint_steps = 0;
         self.solution = None
     
     def inc_count(self):
         if self.parent: self.parent.inc_count()
         self.count+=1
+    def inc_cons(self):
+        if self.parent: self.parent.inc_cons()
+        self.constraint_steps+=1
 
     def make_child(self, box=None, new_val=None):
-        print "Making branch: box:%s val:%s"%(box, new_val)
+        logging.debug( "Making branch: box:%s val:%s"%(box, new_val) )
         self.inc_count()
         c = Sudoku(deepcopy(self.puzzle), self)
         if box and new_val:
@@ -121,6 +109,8 @@ class Sudoku (object):
         self.solution = self.search()
         if self.solution:
             self.puzzle = deepcopy(self.solution.puzzle)
+            self.status()
+            
     
     def square_solved(self,row, col):
         return isinstance(self.puzzle[row][col], int)
@@ -129,17 +119,16 @@ class Sudoku (object):
         new_constraint = [True]
         def fn():
             new_constraint[0] = False
-            for i in PIDXS:
-                for j in PIDXS:
-                    if self.square_solved(i,j): continue
-                    p = set(PVALS) - self.index_constraints(i,j)
-                    if len(p)==1:
-                        p = p.pop()
-                        print "found constraint:",i,j,p
-                        new_constraint[0]=True
-                        self.puzzle[i][j] = p
-                    elif len(p)==0: raise NoPossibleValues()
-                    else: self.puzzle[i][j] = p
+            self.inc_cons()
+            for i,j in puzzle_range:
+                if self.square_solved(i,j): continue
+                p = set(PVALS) - self.index_constraints(i,j)
+                if len(p)==1:
+                    p = p.pop()
+                    new_constraint[0]=True
+                    self.puzzle[i][j] = p
+                elif len(p)==0: raise NoPossibleValues()
+                else: self.puzzle[i][j] = p
         while(new_constraint[0]): fn()
 
     def index_constraints(self,row,col):
@@ -161,11 +150,18 @@ class Sudoku (object):
             if not self.square_solved(i,j): return False
         return self
 
+    def status(self):
+        s = 'Solved Puzzle in %dc and %sb: \n' % \
+            (self.constraint_steps, self.count)
+        logging.info(s)
+        return s
+
     def __str__(self):
         s = StringIO()
         if self.is_solved():
             s.write("-------------------\n")
-            s.write('Solved Puzzle in %s branches: \n'%self.count)
+            s.write('Solved Puzzle in %dc and %sb: \n' %
+                    (self.constraint_steps, self.count))
         s.write("-------------------\n")
         for i in PIDXS:
             s.write('|')
@@ -177,6 +173,15 @@ class Sudoku (object):
             s.write('\n')
             if i%3==2: s.write("-------------------\n")
         return s.getvalue()
-        
-med = solve_puzzle(medium_puzzle)
-vhard = solve_puzzle(very_hard_puzzle)
+     
+if __name__ == "__main__":
+    solve_some_puzzles()
+else:
+    pf = 'sudoku.v1'
+    cProfile.run('sudoku.solve_some_puzzles()', pf)
+    p = pstats.Stats(pf)
+    p.strip_dirs().sort_stats(-1)
+    p.sort_stats('time').print_stats(10)
+
+    
+
