@@ -50,14 +50,14 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles[0:4]:
+    for p in puzzles.puzzles[0:5]:
         print "Starting puzzle %s" % i
-        start = time.time()
         p = read_puzzle(p)
         print p
+        p.start = time.time()
         s = solve_puzzle(p)
         print s
-        print "Done with puzzle %s in %s sec" % (i, time.time()-start)
+        print "Done with puzzle %s in %s sec" % (i, time.time()-p.start)
         i+=1
 
 class NoPossibleValues(Exception): pass
@@ -73,9 +73,11 @@ class Box (object):
         return "Box(%s,%s,%s)"%(self.row,self.column,self.val)
 
 class Sudoku (object):
-    def __init__(self, puzzle, parent=None):
+    def __init__(self, puzzle, parent=None, depth=1, start=None):
         self.puzzle = puzzle
         self.parent = parent
+        self.depth = depth
+        self.start = start
         self.count = 1
         self.constraint_steps = 0;
         self.solution = None
@@ -83,16 +85,22 @@ class Sudoku (object):
     def inc_count(self):
         if self.parent: self.parent.inc_count()
         self.count+=1
+
+    def branch_count(self):
+        if self.parent: return self.parent.branch_count()
+        return self.count
+
     def inc_cons(self):
         if self.parent: self.parent.inc_cons()
         self.constraint_steps+=1
 
     def make_child(self, box=None, new_val=None):
-        logging.debug( "Making branch: box:%s val:%s"%(box, new_val) )
         self.inc_count()
-        c = Sudoku(deepcopy(self.puzzle), self)
-        if box and new_val:
-            c.puzzle[box.row][box.column] = new_val
+        idx = self.branch_count()
+        if idx%1000==0:
+            print "Making branch (idx:%d, depth:%d): box:%s val:%s - %ss"%(idx, self.depth, box, new_val, time.time()-self.start)
+        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start)
+        if box and new_val: c.puzzle[box.row][box.column] = new_val
         return c
 
     def open_boxes(self):
