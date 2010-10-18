@@ -1,5 +1,5 @@
 from StringIO import StringIO
-import re, traceback
+import re, traceback, types
 import cProfile, pstats, time
 import logging
 from copy import deepcopy
@@ -62,6 +62,19 @@ def solve_some_puzzles():
         print "Done with puzzle %s in %s sec" % (i, time.time()-p.start)
         i+=1
 
+class Memoize:
+    """Memoize(fn) - an instance which acts like fn but memoizes its arguments
+       Will only work on functions with non-mutable arguments
+    """
+    def __init__(self, fn):
+        self.fn = fn
+        self.memo = {}
+    def __call__(self, *args):
+        if not self.memo.has_key(args):
+            self.memo[args] = self.fn(*args)
+        return self.memo[args]
+
+
 class NoPossibleValues(Exception):
     def __init__(self, row, col):
         self.row,self.col = row,col
@@ -88,6 +101,8 @@ class Sudoku (object):
         self.start = start or time.time()
         self.count = 1
         self.constraint_steps = 0;
+        self.ip = Memoize(Sudoku.index_possibilites)
+        self.index_possibilites = types.MethodType(self.ip, self, Sudoku)
     
     def inc_count(self):
         if self.parent: self.parent.inc_count()
@@ -152,6 +167,7 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = True
         while(new_constraint):
+            self.ip.memo={}
             new_constraint = False
             self.inc_cons()
             for i,j in self.unsolved_idxs:
