@@ -167,29 +167,20 @@ class Sudoku (object):
     
     def constrain(self):
         new_constraint = False
+        constraints = [lambda i,j: self.index_possibilites(i,j),
+                       lambda i,j: self.squeeze(self.index_possibilites(i,j), i, j),
+                       lambda i,j: self.cross_hatch(self.index_possibilites(i,j), i, j)]
         self.inc_cons()
-        for i,j in self.unsolved_idxs:
-            if self.square_solved(i,j): 
-                self.unsolved_idxs.remove([i,j])
-                continue
-            p = self.index_possibilites(i,j)
-            # if len(p)>1: p = self.cross_hatch(p, i, j)
-            if len(p)==1:
-                self.set_puzzle_val(i, j, p.pop())
-                new_constraint=True
-            elif len(p)==0: raise NoPossibleValues(i,j)
-
-        # faster and less branches when this is run as a second loop
-        # rather than in the first loop
-        for i,j in self.unsolved_idxs:
-            if self.square_solved(i,j): 
-                self.unsolved_idxs.remove([i,j])
-                continue
-            p = self.cross_hatch(self.index_possibilites(i,j), i, j)
-            if len(p)==1:
-                self.set_puzzle_val(i, j, p.pop())
-                new_constraint=True
-            elif len(p)==0: raise NoPossibleValues(i,j)
+        for cons in constraints:
+            for i,j in self.unsolved_idxs:
+                if self.square_solved(i,j): 
+                    self.unsolved_idxs.remove([i,j])
+                    continue
+                p = cons(i,j)
+                if len(p)==1:
+                    self.set_puzzle_val(i, j, p.pop())
+                    new_constraint=True
+                elif len(p)==0: raise NoPossibleValues(i,j)
 
         if new_constraint: self.constrain()
         
@@ -265,8 +256,6 @@ class Sudoku (object):
 
     def index_possibilites(self,row,col):
         pos = PVALS - self.index_constraints(row,col)
-        #further constrains
-        if len(pos)>1: pos = self.squeeze(pos, row, col)
         return pos
 
     def is_solved(self):
