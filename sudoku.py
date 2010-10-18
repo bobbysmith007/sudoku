@@ -173,11 +173,14 @@ class Sudoku (object):
                 self.unsolved_idxs.remove([i,j])
                 continue
             p = self.index_possibilites(i,j)
+            # if len(p)>1: p = self.cross_hatch(p, i, j)
             if len(p)==1:
                 self.set_puzzle_val(i, j, p.pop())
                 new_constraint=True
             elif len(p)==0: raise NoPossibleValues(i,j)
 
+        # faster and less branches when this is run as a second loop
+        # rather than in the first loop
         for i,j in self.unsolved_idxs:
             if self.square_solved(i,j): 
                 self.unsolved_idxs.remove([i,j])
