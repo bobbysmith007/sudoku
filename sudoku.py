@@ -159,10 +159,13 @@ class Sudoku (object):
             
     def square_solved(self,row, col):
         return self.puzzle[row][col]
+
+    def set_puzzle_val(self, row, col, v):
+        self.ip.memo={} #reset IP memoization
+        self.puzzle[row][col] = v
+        self.unsolved_idxs.remove([row,col])
     
     def constrain(self):
-        new_constraint = False
-        self.ip.memo={} #reset IP memoization
         new_constraint = False
         self.inc_cons()
         for i,j in self.unsolved_idxs:
@@ -170,14 +173,21 @@ class Sudoku (object):
                 self.unsolved_idxs.remove([i,j])
                 continue
             p = self.index_possibilites(i,j)
-            if len(p) > 1:
-                p = self.cross_hatch(p, i, j)    
             if len(p)==1:
-                p = p.pop()
-                self.puzzle[i][j] = p
-                self.unsolved_idxs.remove([i,j])
+                self.set_puzzle_val(i, j, p.pop())
                 new_constraint=True
             elif len(p)==0: raise NoPossibleValues(i,j)
+
+        for i,j in self.unsolved_idxs:
+            if self.square_solved(i,j): 
+                self.unsolved_idxs.remove([i,j])
+                continue
+            p = self.cross_hatch(self.index_possibilites(i,j), i, j)
+            if len(p)==1:
+                self.set_puzzle_val(i, j, p.pop())
+                new_constraint=True
+            elif len(p)==0: raise NoPossibleValues(i,j)
+
         if new_constraint: self.constrain()
         
 
@@ -229,13 +239,13 @@ class Sudoku (object):
         """ constrain possibilities by crosshatching
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
-        unpos = deepcopy(pos)
+        #unpos = deepcopy(pos)
         for v in pos:
             not_allowed_elsewhere = True
             sqrs = self.free_in_square(row, col)
             sqrs.remove([row,col]) #remove me from the current square
             for i,j in sqrs:
-                not_allowed_elsewhere &= not v in self.index_possibilites(row, col)
+                not_allowed_elsewhere &= not v in self.index_possibilites(i, j)
             if not_allowed_elsewhere:
                 #print "Cross Hatching <%s,%s> to %s" % (row, col, v)
                 return set([v])
