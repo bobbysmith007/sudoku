@@ -17,6 +17,18 @@ def tryint(v):
     try: return int(v)
     except: return None
 
+class Memoize:
+    """Memoize(fn) - an instance which acts like fn but memoizes its arguments
+       Will only work on functions with non-mutable arguments
+    """
+    def __init__(self, fn):
+        self.fn = fn
+        self.memo = {}
+    def __call__(self, *args):
+        if not self.memo.has_key(args):
+            self.memo[args] = self.fn(*args)
+        return self.memo[args]
+
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
               for i in PIDXS]
@@ -47,7 +59,6 @@ def solve_puzzle(s):
         s = read_puzzle(s)
     s.solve()
     assert s.is_solved()
-    #print s.status()
     return s
 
 def solve_some_puzzles():
@@ -55,32 +66,17 @@ def solve_some_puzzles():
     for p in puzzles.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
-        #print p
         p.start = time.time()
         s = solve_puzzle(p)
         print s
         print "Done with puzzle %s in %s sec" % (i, time.time()-p.start)
         i+=1
 
-class Memoize:
-    """Memoize(fn) - an instance which acts like fn but memoizes its arguments
-       Will only work on functions with non-mutable arguments
-    """
-    def __init__(self, fn):
-        self.fn = fn
-        self.memo = {}
-    def __call__(self, *args):
-        if not self.memo.has_key(args):
-            self.memo[args] = self.fn(*args)
-        return self.memo[args]
-
-
 class NoPossibleValues(Exception):
     def __init__(self, row, col):
         self.row,self.col = row,col
     def __str__(self):
         return "NoPossibleValues for <%d,%d>" % (self.row, self.col)
-        
 
 class Box (object):
     def __init__(self, row, column, val):
@@ -122,7 +118,8 @@ class Sudoku (object):
         if idx%1000==0:
             print "Making branch (idx:%d, depth:%d): %s val:%s - %ss" % \
                 (idx, self.depth, box, new_val, time.time()-self.start)
-        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start, deepcopy(self.unsolved_idxs))
+        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start, \
+                       deepcopy(self.unsolved_idxs))
         if box and new_val: 
             c.puzzle[box.row][box.column] = new_val
         return c
@@ -141,7 +138,6 @@ class Sudoku (object):
             else:
                 print "ERROR ON BOARD:\n",self
                 raise e
-
         if self.is_solved(): return self
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
@@ -165,21 +161,40 @@ class Sudoku (object):
         return self.puzzle[row][col]
     
     def constrain(self):
-        new_constraint = True
-        while(new_constraint):
-            self.ip.memo={}
-            new_constraint = False
-            self.inc_cons()
-            for i,j in self.unsolved_idxs:
-                if self.square_solved(i,j): 
-                    self.unsolved_idxs.remove([i,j])
-                    continue
-                p = self.index_possibilites(i,j)
-                if len(p)==1:
-                    p = p.pop()
-                    self.puzzle[i][j] = p
-                    new_constraint=True
-                elif len(p)==0: raise NoPossibleValues(i,j)
+        def first():
+            new_constraint = True
+            while(new_constraint):
+                self.ip.memo={} #reset IP memoization
+                new_constraint = False
+                self.inc_cons()
+                for i,j in self.unsolved_idxs:
+                    if self.square_solved(i,j): 
+                        self.unsolved_idxs.remove([i,j])
+                        continue
+                    p = self.index_possibilites(i,j)
+                    if len(p)==1:
+                        p = p.pop()
+                        self.puzzle[i][j] = p
+                        new_constraint=True
+                    elif len(p)==0: raise NoPossibleValues(i,j)
+        first()
+
+        new_constraint = False
+        for i,j in self.unsolved_idxs:
+            if self.square_solved(i,j): 
+                self.unsolved_idxs.remove([i,j])
+                continue
+            p = self.cross_hatch(self.index_possibilites(i,j), i, j)
+            if len(p)==1:
+                p = p.pop()
+                self.puzzle[i][j] = p
+                new_constraint=True
+            elif len(p)==0: raise NoPossibleValues(i,j)
+        if new_constraint: self.constrain()
+        
+
+    def free_in_square(self, row, col):
+        return [[i,j] for i,j in square(row,col) if not self.square_solved(i, j)]
 
     def free_square_row(self, row, col):
         return [i for i in square_idxs(row) if not self.square_solved(i, col)]
@@ -194,31 +209,48 @@ class Sudoku (object):
         return [j for j in square_idxs(col) if self.square_solved(row, j)]
 
     def is_in_row(self, val, row):
-        for j in PIDXS:
+        for j in PIDXS: 
             if self.puzzle[row][j] == val: return True
 
     def is_in_col(self, val, col):
-        for i in PIDXS:
+        for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
     def squeeze(self, pos, row, col):
-        """ constrain possibilities by squeezing """
-        cols = self.closed_square_col(row, col)
-        rows = self.closed_square_row(row, col)
-
-        if len(cols)==2: # two closed columns
+        """ constrain possibilities by squeezing
+        http://www.chessandpoker.com/sudoku-strategy-guide.html
+        """
+        if len(self.closed_square_col(row, col))==2: # two closed columns
             idxs = square_idxs(row)
             idxs.remove(row)
             for v in pos:
                 if self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1]):
+                    #print "Squeezing <%s,%s> to %s" % (row, col, v)
                     return set([v])
 
-        if len(rows)==2: # two closed rows
+        if len(self.closed_square_row(row, col))==2: # two closed rows
             idxs = square_idxs(col)
             idxs.remove(col)
             for v in pos:
                 if self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1]):
+                    #print "Squeezing <%s,%s> to %s" % (row, col, v)
                     return set([v])
+        return pos
+
+    def cross_hatch(self,pos,row,col):
+        """ constrain possibilities by crosshatching
+        http://www.chessandpoker.com/sudoku-strategy-guide.html
+        """
+        unpos = deepcopy(pos)
+        for v in pos:
+            not_allowed_elsewhere = True
+            sqrs = self.free_in_square(row, col)
+            sqrs.remove([row,col]) #remove me from the current square
+            for i,j in sqrs:
+                not_allowed_elsewhere &= not v in self.index_possibilites(row, col)
+            if not_allowed_elsewhere:
+                #print "Cross Hatching <%s,%s> to %s" % (row, col, v)
+                return set([v])
         return pos
 
     def index_constraints(self,row,col):
@@ -232,12 +264,12 @@ class Sudoku (object):
 
     def index_possibilites(self,row,col):
         pos = PVALS - self.index_constraints(row,col)
-        #further constrain
+        #further constrains
         if len(pos)>1: pos = self.squeeze(pos, row, col)
         return pos
 
     def is_solved(self):
-        for i,j in puzzle_range:
+        for i,j in puzzle_range: 
             if not self.square_solved(i,j): return False
         return self
 
