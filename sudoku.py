@@ -1,5 +1,6 @@
 from StringIO import StringIO
-import cProfile, pstats
+import re
+import cProfile, pstats, time
 import logging
 from copy import deepcopy
 import puzzles
@@ -16,10 +17,12 @@ def tryint(v):
     try: return int(v)
     except: return None
 
+input_cleaner = re.compile('-|\+|\|\s|,')
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
               for i in PIDXS]
-    partial_sol = s.splitlines()[1:]#skip first/last line
+    #skip first/last line
+    partial_sol = re.sub(input_cleaner,"",s).splitlines()[1:]
     i,j=0,0
     for row in partial_sol:
         j=0
@@ -45,9 +48,14 @@ def solve_puzzle(s):
     return s
 
 def solve_some_puzzles():
-    for i in range(0,3):
-        for p in puzzles.puzzles:
-            s = solve_puzzle(p)
+    i = 1
+    for p in puzzles.puzzles:
+        print "Starting puzzle %s" % i
+        start = time.time()
+        s = solve_puzzle(p)
+        print s
+        print "Done with puzzle %s in %s sec" % (i, time.time()-start)
+        i+=1
 
 class NoPossibleValues(Exception): pass
 
@@ -65,7 +73,6 @@ class Sudoku (object):
     def __init__(self, puzzle, parent=None):
         self.puzzle = puzzle
         self.parent = parent
-        self.children = []
         self.count = 1
         self.constraint_steps = 0;
         self.solution = None
@@ -83,7 +90,6 @@ class Sudoku (object):
         c = Sudoku(deepcopy(self.puzzle), self)
         if box and new_val:
             c.puzzle[box.row][box.column] = new_val
-        self.children.append(c)
         return c
 
     def open_boxes(self):
