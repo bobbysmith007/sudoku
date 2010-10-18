@@ -161,33 +161,21 @@ class Sudoku (object):
         return self.puzzle[row][col]
     
     def constrain(self):
-        def first():
-            new_constraint = True
-            while(new_constraint):
-                self.ip.memo={} #reset IP memoization
-                new_constraint = False
-                self.inc_cons()
-                for i,j in self.unsolved_idxs:
-                    if self.square_solved(i,j): 
-                        self.unsolved_idxs.remove([i,j])
-                        continue
-                    p = self.index_possibilites(i,j)
-                    if len(p)==1:
-                        p = p.pop()
-                        self.puzzle[i][j] = p
-                        new_constraint=True
-                    elif len(p)==0: raise NoPossibleValues(i,j)
-        first()
-
         new_constraint = False
+        self.ip.memo={} #reset IP memoization
+        new_constraint = False
+        self.inc_cons()
         for i,j in self.unsolved_idxs:
             if self.square_solved(i,j): 
                 self.unsolved_idxs.remove([i,j])
                 continue
-            p = self.cross_hatch(self.index_possibilites(i,j), i, j)
+            p = self.index_possibilites(i,j)
+            if len(p) > 1:
+                p = self.cross_hatch(p, i, j)    
             if len(p)==1:
                 p = p.pop()
                 self.puzzle[i][j] = p
+                self.unsolved_idxs.remove([i,j])
                 new_constraint=True
             elif len(p)==0: raise NoPossibleValues(i,j)
         if new_constraint: self.constrain()
