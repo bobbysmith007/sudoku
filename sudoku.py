@@ -50,7 +50,7 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles[0:5]:
+    for p in puzzles.puzzles[0:4]:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         print p
@@ -73,14 +73,14 @@ class Box (object):
         return "Box(%s,%s,%s)"%(self.row,self.column,self.val)
 
 class Sudoku (object):
-    def __init__(self, puzzle, parent=None, depth=1, start=None):
+    def __init__(self, puzzle, parent=None, depth=1, start=None, unsolved_idxs=None):
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
-        self.start = start
+        self.unsolved_idxs = unsolved_idxs or deepcopy(puzzle_range)
+        self.start = start or time.time()
         self.count = 1
         self.constraint_steps = 0;
-        self.solution = None
     
     def inc_count(self):
         if self.parent: self.parent.inc_count()
@@ -98,9 +98,10 @@ class Sudoku (object):
         self.inc_count()
         idx = self.branch_count()
         if idx%1000==0:
-            print "Making branch (idx:%d, depth:%d): box:%s val:%s - %ss"%(idx, self.depth, box, new_val, time.time()-self.start)
-        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start)
-        if box and new_val: c.puzzle[box.row][box.column] = new_val
+            print "Making branch (idx:%d, depth:%d): %s val:%s - %ss"%(idx, self.depth, box, new_val, time.time()-self.start)
+        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start, deepcopy(self.unsolved_idxs))
+        if box and new_val: 
+            c.puzzle[box.row][box.column] = new_val
         return c
 
     def open_boxes(self):
@@ -122,9 +123,10 @@ class Sudoku (object):
                 except NoPossibleValues,e: pass
 
     def solve(self):
-        self.solution = self.search()
-        if self.solution:
-            self.puzzle = deepcopy(self.solution.puzzle)
+        sol = self.search()
+        assert sol and sol.is_solved()
+        if sol and sol.is_solved():
+            self.puzzle = deepcopy(sol.puzzle)
             self.status()
             
     def square_solved(self,row, col):
@@ -135,8 +137,10 @@ class Sudoku (object):
         while(new_constraint):
             new_constraint = False
             self.inc_cons()
-            for i,j in puzzle_range:
-                if self.square_solved(i,j): continue
+            for i,j in self.unsolved_idxs:
+                if self.square_solved(i,j): 
+                    self.unsolved_idxs.remove([i,j])
+                    continue
                 p = self.index_possibilites(i,j)
                 if len(p)==1:
                     p = p.pop()
@@ -159,7 +163,6 @@ class Sudoku (object):
         return PVALS - self.index_constraints(row,col)
 
     def is_solved(self):
-        if self.solution: self.solution
         for i,j in puzzle_range:
             if not self.square_solved(i,j): return False
         return self
@@ -196,6 +199,7 @@ class Sudoku (object):
 if __name__ == "__main__":
     solve_some_puzzles()
 else:
+    #puzzle0 = solve_puzzle(puzzles.puzzles[5])
     try:
         pf = 'sudoku.v2'
         cProfile.run('sudoku.solve_some_puzzles()', pf)
