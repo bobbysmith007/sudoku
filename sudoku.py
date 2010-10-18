@@ -35,7 +35,6 @@ def read_puzzle (s):
         i+=1
     return Sudoku(puzzle)
 
-
 def square(row, col):
     r,c = row / 3, col / 3
     return cross(range(r*3,r*3+3), range(c*3,c*3+3))
@@ -44,16 +43,16 @@ def solve_puzzle(s):
     if isinstance(s,str):
         s = read_puzzle(s)
     s.solve()
-    print s.status()
     assert s.is_solved()
+    #print s.status()
     return s
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles[0:4]:
+    for p in puzzles.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
-        print p
+        #print p
         p.start = time.time()
         s = solve_puzzle(p)
         print s
@@ -98,7 +97,8 @@ class Sudoku (object):
         self.inc_count()
         idx = self.branch_count()
         if idx%1000==0:
-            print "Making branch (idx:%d, depth:%d): %s val:%s - %ss"%(idx, self.depth, box, new_val, time.time()-self.start)
+            print "Making branch (idx:%d, depth:%d): %s val:%s - %ss" % \
+                (idx, self.depth, box, new_val, time.time()-self.start)
         c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start, deepcopy(self.unsolved_idxs))
         if box and new_val: 
             c.puzzle[box.row][box.column] = new_val
@@ -112,15 +112,17 @@ class Sudoku (object):
 
     def search(self):
         self.constrain()
-        if self.is_solved():
-            return self
-        for box in self.open_boxes():
-            for v in box.val or []:
-                try:
-                    c = self.make_child(box, v)
-                    sol = c.search()
-                    if sol: return sol
-                except NoPossibleValues,e: pass
+        if self.is_solved(): return self
+        # really only care about the first open box as it WILL be one
+        # of the values there if our model is correct up till now
+        # otherwise any mistake is enough to backtrack
+        box = self.open_boxes()[0]
+        for v in box.val or []:
+            try:
+                c = self.make_child(box, v)
+                sol = c.search()
+                if sol: return sol
+            except NoPossibleValues,e: pass
 
     def solve(self):
         sol = self.search()
@@ -199,15 +201,13 @@ class Sudoku (object):
 if __name__ == "__main__":
     solve_some_puzzles()
 else:
-    #puzzle0 = solve_puzzle(puzzles.puzzles[5])
     try:
         pf = 'sudoku.v2'
         cProfile.run('sudoku.solve_some_puzzles()', pf)
         p = pstats.Stats(pf)
         p.strip_dirs().sort_stats(-1)
         p.sort_stats('time').print_stats(10)
-    except Exception,e:
+    except NameError,e:
+        print "Reload module to run profiling"
+    except Exception, e:
         traceback.print_exc();
-
-    
-
