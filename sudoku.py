@@ -35,9 +35,12 @@ def read_puzzle (s):
         i+=1
     return Sudoku(puzzle)
 
+def square_idxs(i):
+    r = i / 3
+    return range(r*3,r*3+3)
+
 def square(row, col):
-    r,c = row / 3, col / 3
-    return cross(range(r*3,r*3+3), range(c*3,c*3+3))
+    return cross(square_idxs(row), square_idxs(col))
 
 def solve_puzzle(s):
     if isinstance(s,str):
@@ -59,7 +62,12 @@ def solve_some_puzzles():
         print "Done with puzzle %s in %s sec" % (i, time.time()-p.start)
         i+=1
 
-class NoPossibleValues(Exception): pass
+class NoPossibleValues(Exception):
+    def __init__(self, row, col):
+        self.row,self.col = row,col
+    def __str__(self):
+        return "NoPossibleValues for <%d,%d>" % (self.row, self.col)
+        
 
 class Box (object):
     def __init__(self, row, column, val):
@@ -111,7 +119,14 @@ class Sudoku (object):
                       key=len)
 
     def search(self):
-        self.constrain()
+        try:
+            self.constrain()
+        except NoPossibleValues,e:
+            if self.parent: raise e
+            else:
+                print "ERROR ON BOARD:\n",self
+                raise e
+
         if self.is_solved(): return self
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
@@ -148,21 +163,62 @@ class Sudoku (object):
                     p = p.pop()
                     self.puzzle[i][j] = p
                     new_constraint=True
-                elif len(p)==0: raise NoPossibleValues()
+                elif len(p)==0: raise NoPossibleValues(i,j)
+
+    def free_square_row(self, row, col):
+        return [i for i in square_idxs(row) if not self.square_solved(i, col)]
+
+    def free_square_col(self, row, col):
+        return [j for j in square_idxs(col) if not self.square_solved(row, j)]
+
+    def closed_square_row(self, row, col):
+        return [i for i in square_idxs(row) if self.square_solved(i, col)]
+
+    def closed_square_col(self, row, col):
+        return [j for j in square_idxs(col) if self.square_solved(row, j)]
+
+    def is_in_row(self, val, row):
+        for j in PIDXS:
+            if self.puzzle[row][j] == val: return True
+
+    def is_in_col(self, val, col):
+        for i in PIDXS:
+            if self.puzzle[i][col] == val: return True
+
+    def squeeze(self, pos, row, col):
+        """ constrain possibilities by squeezing """
+        cols = self.closed_square_col(row, col)
+        rows = self.closed_square_row(row, col)
+
+        if len(cols)==2: # two closed columns
+            idxs = square_idxs(row)
+            idxs.remove(row)
+            for v in pos:
+                if self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1]):
+                    return set([v])
+
+        if len(rows)==2: # two closed rows
+            idxs = square_idxs(col)
+            idxs.remove(col)
+            for v in pos:
+                if self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1]):
+                    return set([v])
+        return pos
 
     def index_constraints(self,row,col):
         knowns = set()
-        for i in PIDXS:
-            knowns.add( self.puzzle[i][col] )
-        for i in PIDXS:
-            knowns.add( self.puzzle[row][i] )
-        for i,j in square(row,col):
-            knowns.add( self.puzzle[i][j] )
+        for i in PIDXS: knowns.add( self.puzzle[i][col] )
+        for i in PIDXS: knowns.add( self.puzzle[row][i] )
+        for i,j in square(row,col): knowns.add( self.puzzle[i][j] )
+
         knowns.remove(None) # avoids many ifs
         return knowns
 
     def index_possibilites(self,row,col):
-        return PVALS - self.index_constraints(row,col)
+        pos = PVALS - self.index_constraints(row,col)
+        #further constrain
+        if len(pos)>1: pos = self.squeeze(pos, row, col)
+        return pos
 
     def is_solved(self):
         for i,j in puzzle_range:
@@ -202,12 +258,13 @@ if __name__ == "__main__":
     solve_some_puzzles()
 else:
     try:
-        pf = 'sudoku.v2'
+        pf = 'sudoku.v4'
         cProfile.run('sudoku.solve_some_puzzles()', pf)
         p = pstats.Stats(pf)
         p.strip_dirs().sort_stats(-1)
         p.sort_stats('time').print_stats(10)
     except NameError,e:
         print "Reload module to run profiling"
+        traceback.print_exc();
     except Exception, e:
         traceback.print_exc();
