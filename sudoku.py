@@ -1,5 +1,5 @@
 from StringIO import StringIO
-import re
+import re, traceback
 import cProfile, pstats, time
 import logging
 from copy import deepcopy
@@ -17,12 +17,12 @@ def tryint(v):
     try: return int(v)
     except: return None
 
-input_cleaner = re.compile('-|\+|\|\s|,')
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
               for i in PIDXS]
     #skip first/last line
-    partial_sol = re.sub(input_cleaner,"",s).splitlines()[1:]
+    s = re.sub(r'\n\n+','\n',re.sub(r'-|\+|\|| |,',"",s))
+    partial_sol = s.splitlines()[1:]
     i,j=0,0
     for row in partial_sol:
         j=0
@@ -41,7 +41,8 @@ def square(row, col):
     return cross(range(r*3,r*3+3), range(c*3,c*3+3))
 
 def solve_puzzle(s):
-    s = read_puzzle(s)
+    if isinstance(s,str):
+        s = read_puzzle(s)
     s.solve()
     print s.status()
     assert s.is_solved()
@@ -49,9 +50,11 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles:
+    for p in puzzles.puzzles[0:4]:
         print "Starting puzzle %s" % i
         start = time.time()
+        p = read_puzzle(p)
+        print p
         s = solve_puzzle(p)
         print s
         print "Done with puzzle %s in %s sec" % (i, time.time()-start)
@@ -166,19 +169,20 @@ class Sudoku (object):
     def __str__(self):
         s = StringIO()
         if self.is_solved():
-            s.write("-------------------\n")
+            s.write("-------------------------------\n")
             s.write('Solved Puzzle in %dc and %sb: \n' %
                     (self.constraint_steps, self.count))
-        s.write("-------------------\n")
+        s.write("-------------------------------\n")
         for i in PIDXS:
             s.write('|')
             for j in PIDXS:
+                s.write(' ')
                 if self.square_solved(i,j): s.write(self.puzzle[i][j])
-                else: s.write( ' ' )
+                else: s.write( '.' )
+                s.write(' ')
                 if j%3==2: s.write('|')
-                else: s.write(',')
             s.write('\n')
-            if i%3==2: s.write("-------------------\n")
+            if i%3==2: s.write("-------------------------------\n")
         return s.getvalue()
      
 if __name__ == "__main__":
@@ -191,7 +195,7 @@ else:
         p.strip_dirs().sort_stats(-1)
         p.sort_stats('time').print_stats(10)
     except Exception,e:
-        print "Excepted:", e
+        traceback.print_exc();
 
     
 
