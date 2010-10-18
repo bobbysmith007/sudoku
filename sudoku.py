@@ -6,7 +6,7 @@ import puzzles
 
 logging.basicConfig(level=logging.info)
 
-PVALS = range(1,10)
+PVALS = set(range(1,10))
 PIDXS = range(0,9)
 def cross(l1, l2):
     return [[i,j] for i in l1 for j in l2]
@@ -17,8 +17,8 @@ def tryint(v):
     except: return None
 
 def read_puzzle (s):
-    puzzle = [[PVALS for j in PIDXS]
-                   for i in PIDXS]
+    puzzle = [[None for j in PIDXS]
+              for i in PIDXS]
     partial_sol = s.splitlines()[1:]#skip first/last line
     i,j=0,0
     for row in partial_sol:
@@ -27,10 +27,11 @@ def read_puzzle (s):
         for char in row:
             #print i,j,char
             if j>8: continue
-            if tryint(char): puzzle[i][j] = int(char)
+            puzzle[i][j] = tryint(char)
             j+=1
         i+=1
     return Sudoku(puzzle)
+
 
 def square(row, col):
     r,c = row / 3, col / 3
@@ -39,7 +40,6 @@ def square(row, col):
 def solve_puzzle(s):
     s = read_puzzle(s)
     s.solve()
-    #print s
     print s.status()
     assert s.is_solved()
     return s
@@ -87,7 +87,7 @@ class Sudoku (object):
         return c
 
     def open_boxes(self):
-        return sorted([Box(i,j,self.puzzle[i][j])
+        return sorted([Box(i,j,self.index_possibilites(i,j))
                        for i,j in puzzle_range
                        if not self.square_solved(i,j)],
                       key=len)
@@ -97,12 +97,11 @@ class Sudoku (object):
         if self.is_solved():
             return self
         for box in self.open_boxes():
-            for v in box.val:
+            for v in box.val or []:
                 try:
                     c = self.make_child(box, v)
                     sol = c.search()
-                    if isinstance(sol, Sudoku):
-                        return sol
+                    if sol: return sol
                 except NoPossibleValues,e: pass
 
     def solve(self):
@@ -111,38 +110,36 @@ class Sudoku (object):
             self.puzzle = deepcopy(self.solution.puzzle)
             self.status()
             
-    
     def square_solved(self,row, col):
-        return isinstance(self.puzzle[row][col], int)
+        return self.puzzle[row][col]
     
     def constrain(self):
-        new_constraint = [True]
-        def fn():
-            new_constraint[0] = False
+        new_constraint = True
+        while(new_constraint):
+            new_constraint = False
             self.inc_cons()
             for i,j in puzzle_range:
                 if self.square_solved(i,j): continue
-                p = set(PVALS) - self.index_constraints(i,j)
+                p = self.index_possibilites(i,j)
                 if len(p)==1:
                     p = p.pop()
-                    new_constraint[0]=True
                     self.puzzle[i][j] = p
+                    new_constraint=True
                 elif len(p)==0: raise NoPossibleValues()
-                else: self.puzzle[i][j] = p
-        while(new_constraint[0]): fn()
 
     def index_constraints(self,row,col):
         knowns = set()
         for i in PIDXS:
-            if self.square_solved(i,col):
-                knowns.add( self.puzzle[i][col] )
+            knowns.add( self.puzzle[i][col] )
         for i in PIDXS:
-            if self.square_solved(row,i):
-                knowns.add( self.puzzle[row][i] )
+            knowns.add( self.puzzle[row][i] )
         for i,j in square(row,col):
-            if self.square_solved(i,j):
-                knowns.add( self.puzzle[i][j] )
+            knowns.add( self.puzzle[i][j] )
+        knowns.remove(None) # avoids many ifs
         return knowns
+
+    def index_possibilites(self,row,col):
+        return PVALS - self.index_constraints(row,col)
 
     def is_solved(self):
         if self.solution: self.solution
@@ -151,8 +148,12 @@ class Sudoku (object):
         return self
 
     def status(self):
-        s = 'Solved Puzzle in %dc and %sb: \n' % \
-            (self.constraint_steps, self.count)
+        s=None
+        if self.is_solved():
+            s = 'Solved Puzzle in %dc and %sb: \n' % \
+                (self.constraint_steps, self.count)
+        else:
+            s = 'Unsolved Puzzle:\n%s' % self
         logging.info(s)
         return s
 
@@ -177,11 +178,14 @@ class Sudoku (object):
 if __name__ == "__main__":
     solve_some_puzzles()
 else:
-    pf = 'sudoku.v1'
-    cProfile.run('sudoku.solve_some_puzzles()', pf)
-    p = pstats.Stats(pf)
-    p.strip_dirs().sort_stats(-1)
-    p.sort_stats('time').print_stats(10)
+    try:
+        pf = 'sudoku.v2'
+        cProfile.run('sudoku.solve_some_puzzles()', pf)
+        p = pstats.Stats(pf)
+        p.strip_dirs().sort_stats(-1)
+        p.sort_stats('time').print_stats(10)
+    except Exception,e:
+        print "Excepted:", e
 
     
 
