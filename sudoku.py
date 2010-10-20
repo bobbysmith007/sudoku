@@ -9,8 +9,27 @@ logging.basicConfig(level=logging.info)
 
 PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
+
 def cross(l1, l2):
     return [[i,j] for i in l1 for j in l2]
+
+def cross_permute_indexes(l):
+    """
+    l = [[1,1],[1,2],[1,3]]
+    m = cross_permute_indexes(l)
+    >>> [[1,1],[1,2],
+         [1,1],[1,3],
+         [1,2],[1,3]]
+    """
+    i=0
+    res=[]
+    for x in l:
+        i+=1
+        subl=l[i:]
+        for y in subl:
+            res.append([x,y])
+    return res
+
 puzzle_range = cross(PIDXS,PIDXS)
 
 def tryint(v):
@@ -77,10 +96,10 @@ def solve_some_puzzles():
         i+=1
 
 class NoPossibleValues(Exception):
-    def __init__(self, row, col):
+    def __init__(self, row=None, col=None):
         self.row,self.col = row,col
     def __str__(self):
-        return "NoPossibleValues for <%d,%d>" % (self.row, self.col)
+        return "NoPossibleValues for <%s,%s>" % (self.row, self.col)
 
 class Box (object):
     def __init__(self, row, column, val):
@@ -103,7 +122,9 @@ class Sudoku (object):
                  stats=None):
         self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0, row_squeezes=0,
                                     col_squeezes=0, single_possiblities=0, unique_in_row=0,
-                                    unique_in_col=0,unique_in_square=0)
+                                    unique_in_col=0,unique_in_square=0,
+                                    twins_col_exclusion=0, twins_row_exclusion=0,
+                                    twins_square_exclusion=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -152,10 +173,12 @@ class Sudoku (object):
 
     def solve(self):
         sol = self.search()
-        assert sol and sol.is_solved()
         if sol and sol.is_solved():
             self.puzzle = deepcopy(sol.puzzle)
             self.status()
+        else:
+            print self
+            raise Exception("Puzzle Not Solved...")
             
     def square_solved(self,row, col):
         return self.puzzle[row][col]
@@ -174,6 +197,9 @@ class Sudoku (object):
             self.value_not_placeable_in_square,
             self.value_not_placeable_in_row,
             self.value_not_placeable_in_col,
+            self.twins_exclusion_in_col,
+            self.twins_exclusion_in_row,
+            self.twins_exclusion_in_square,
             ]
         self.stats.constraint_steps+=1
         for cons in constraints:
@@ -291,7 +317,47 @@ class Sudoku (object):
         return pos
 
     def twins_exclusion_in_col(self,pos,row,col):
-        pass
+        me = [row,col]
+        fic = self.free_in_col(col)
+        fic.remove(me)
+        p = set()
+        if len(fic) == 2:
+            other_pos = self.index_possibilites(*fic[0])
+            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
+                p = pos - other_pos
+        if len(p)==1:
+            self.stats.twins_col_exclusion += 1
+            return p
+        return pos
+
+    def twins_exclusion_in_row(self,pos,row,col):
+        me = [row,col]
+        fic = self.free_in_row(row)
+        fic.remove(me)
+        p = set()
+        if len(fic) == 2:
+            other_pos = self.index_possibilites(*fic[0])
+            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
+                p = pos - other_pos
+        if len(p)==1:
+            self.stats.twins_row_exclusion += 1
+            return p
+        return pos
+
+    def twins_exclusion_in_square(self,pos,row,col):
+        me = [row,col]
+        fic = self.free_in_square(row,col)
+        fic.remove(me)
+        p = set()
+        if len(fic) == 2:
+            other_pos = self.index_possibilites(*fic[0])
+            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
+                p = pos - other_pos
+        if len(p)==1:
+            self.stats.twins_square_exclusion += 1
+            return p
+        return pos
+
 
     def index_constraints(self,row,col):
         knowns = set()
