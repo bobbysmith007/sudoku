@@ -168,15 +168,12 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            lambda i,j: self.single_possibility_constraint(self.index_possibilites(i,j),i,j),
-            lambda i,j: self.squeeze_col(self.index_possibilites(i,j), i, j),
-            lambda i,j: self.squeeze_row(self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_square(
-                self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_row(
-                self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_col(
-                self.index_possibilites(i,j), i, j),
+            self.single_possibility_constraint,
+            self.squeeze_col,
+            self.squeeze_row,
+            self.value_not_placeable_in_square,
+            self.value_not_placeable_in_row,
+            self.value_not_placeable_in_col,
             ]
         self.stats.constraint_steps+=1
         for cons in constraints:
@@ -184,7 +181,7 @@ class Sudoku (object):
                 if self.square_solved(i,j): 
                     self.unsolved_idxs.remove([i,j])
                     continue
-                p = cons(i,j)
+                p = cons(self.index_possibilites(i, j), i, j)
                 if len(p)==1:
                     self.set_puzzle_val(i, j, p.pop())
                     new_constraint=True
