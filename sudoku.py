@@ -29,24 +29,6 @@ class Memoize(object):
             self.memo[args] = self.fn(*args)
         return self.memo[args]
 
-class ParentSlot(object):
-    def __init__(self,name,init=None):
-        self.name = name
-        self.pname = '__'+self.name
-        self.init=init
-    def __get__(self, obj, objtype):
-        if obj.parent: return getattr(obj.parent,self.name)
-        return getattr(obj,self.pname,self.init)
-    def __set__(self, obj, val):
-        if obj.parent: setattr(obj.parent, self.name, val)
-        else: setattr(obj, self.pname, val)
-
-# class ParentSlot(object):
-#     value = ParentSlot('value')
-#     def __init__(self, v,parent=None):
-#         self.parent = parent
-#         self.value = v
-
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
               for i in PIDXS]
@@ -110,16 +92,18 @@ class Box (object):
     def __str__(self):
         return "Box(%s,%s,%s)"%(self.row,self.column,self.val)
 
+class Stats (object):
+    def __init__(self,**kws):
+        for k,v in kws.items():
+            setattr(self, k, v)
+
 class Sudoku (object):
-    puzzle_branches = ParentSlot('puzzle_branches',1)
-    constraint_steps = ParentSlot('constraint_steps',0)
-    squeezes = ParentSlot('squeezes',0)
-    single_possiblities = ParentSlot('single_possiblities',0)
-    unique_in_square = ParentSlot('unique_in_square',0)
-    unique_in_col = ParentSlot('unique_in_col',0)
-    unique_in_row = ParentSlot('unique_in_row',0)
     def __init__(self, puzzle, parent=None, depth=1,
-                 start=None, unsolved_idxs=None):
+                 start=None, unsolved_idxs=None,
+                 stats=None):
+        self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0, row_squeezes=0,
+                                    col_squeezes=0, single_possiblities=0, unique_in_row=0,
+                                    unique_in_col=0,unique_in_square=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -129,13 +113,13 @@ class Sudoku (object):
         self.index_possibilites = types.MethodType(self.ip, self, Sudoku)
     
     def make_child(self, box=None, new_val=None):
-        self.puzzle_branches+=1
-        idx = self.puzzle_branches
+        self.stats.puzzle_branches+=1
+        idx = self.stats.puzzle_branches
         if idx%1000==0:
             print "Making branch (idx:%d, depth:%d): %s val:%s - %ss" % \
                 (idx, self.depth, box, new_val, time.time()-self.start)
         c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start, \
-                       deepcopy(self.unsolved_idxs))
+                       deepcopy(self.unsolved_idxs), self.stats)
         if box and new_val: 
             c.puzzle[box.row][box.column] = new_val
         return c
@@ -184,16 +168,17 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            lambda i,j: self.index_possibilites(i,j),
-            lambda i,j: self.squeeze(self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_square(\
+            lambda i,j: self.single_possibility_constraint(self.index_possibilites(i,j),i,j),
+            lambda i,j: self.squeeze_col(self.index_possibilites(i,j), i, j),
+            lambda i,j: self.squeeze_row(self.index_possibilites(i,j), i, j),
+            lambda i,j: self.value_not_placeable_in_square(
                 self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_row(\
+            lambda i,j: self.value_not_placeable_in_row(
                 self.index_possibilites(i,j), i, j),
-            lambda i,j: self.value_not_placeable_in_col(\
+            lambda i,j: self.value_not_placeable_in_col(
                 self.index_possibilites(i,j), i, j),
             ]
-        self.constraint_steps+=1
+        self.stats.constraint_steps+=1
         for cons in constraints:
             for i,j in self.unsolved_idxs:
                 if self.square_solved(i,j): 
@@ -207,6 +192,11 @@ class Sudoku (object):
 
         if new_constraint: self.constrain()
         
+    def free_in_row(self, row):
+        return [[row,j] for j in PIDXS if not self.square_solved(row, j)]
+
+    def free_in_col(self, col):
+        return [[i,col] for i in PIDXS if not self.square_solved(i, col)]
 
     def free_in_square(self, row, col):
         return [[i,j] for i,j in square(row,col) if not self.square_solved(i, j)]
@@ -231,7 +221,11 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def squeeze(self, pos, row, col):
+    def single_possibility_constraint(self, pos, row, col):
+        if len(pos)==1: self.stats.single_possiblities+=1
+        return pos
+
+    def squeeze_col(self, pos, row, col):
         """ constrain possibilities by squeezing
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
@@ -241,16 +235,18 @@ class Sudoku (object):
             for v in pos:
                 if self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1]):
                     #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.squeezes+=1
+                    self.stats.col_squeezes+=1
                     return set([v])
+        return pos
 
+    def squeeze_row(self, pos, row, col):
         if len(self.closed_square_row(row, col))==2: # two closed rows
             idxs = square_idxs(col)
             idxs.remove(col)
             for v in pos:
                 if self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1]):
                     #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.squeezes+=1
+                    self.stats.row_squeezes+=1
                     return set([v])
         return pos
 
@@ -267,7 +263,7 @@ class Sudoku (object):
             for i,j in sqrs:
                 not_allowed_elsewhere &= not v in self.index_possibilites(i, j)
             if not_allowed_elsewhere:
-                self.unique_in_square+=1
+                self.stats.unique_in_square+=1
                 return set([v])
         return pos
 
@@ -277,11 +273,12 @@ class Sudoku (object):
         """
         for v in pos:
             not_allowed_elsewhere = True
+            
             for j in PIDXS - set([col]):
                 not_allowed_elsewhere &= \
                     not v in self.index_possibilites(row, j)
             if not_allowed_elsewhere: 
-                self.unique_in_row+=1
+                self.stats.unique_in_row+=1
                 return set([v])
         return pos
 
@@ -292,23 +289,26 @@ class Sudoku (object):
                 not_allowed_elsewhere &= \
                     not v in self.index_possibilites(i, col)
             if not_allowed_elsewhere:
-                self.unique_in_col+=1
+                self.stats.unique_in_col+=1
                 return set([v])
         return pos
+
+    def twins_exclusion_in_col(self,pos,row,col):
+        pass
 
     def index_constraints(self,row,col):
         knowns = set()
         for i in PIDXS: knowns.add( self.puzzle[i][col] )
         for i in PIDXS: knowns.add( self.puzzle[row][i] )
         for i,j in square(row,col): knowns.add( self.puzzle[i][j] )
-
         knowns.remove(None) # avoids many ifs
         return knowns
 
     def index_possibilites(self,row,col):
+        v = self.square_solved(row,col)
+        if v: return set([v])
         pos = PVALS - self.index_constraints(row,col)
-        if len(pos)==1:self.single_possiblities+=1
-        return pos
+        return pos        
 
     def is_solved(self):
         for i,j in puzzle_range: 
@@ -316,29 +316,26 @@ class Sudoku (object):
         return self
 
     def status(self):
-        s=None
+        s=StringIO()
         if self.is_solved():
-            s = 'Solved Puzzle in %dc and %sb: \n' % \
-                (self.constraint_steps, self.puzzle_branches)
+            s.write('Solved Puzzle: \n')
         else:
-            s = 'Unsolved Puzzle:\n%s' % self
+            s.write('Unsolved Puzzle:\n')
+        stats = deepcopy(vars(self.stats))
+        del stats['constraint_steps']
+        del stats['puzzle_branches']
+        s.write("  %s - Constraint Cycles\n" % self.stats.constraint_steps)
+        s.write("  %s - Branches\n\n" % self.stats.puzzle_branches)
+        for k,v in stats.items():
+            s.write('  %s : %s \n' % (k,v))
+        s = s.getvalue()
         logging.info(s)
         return s
 
     def __str__(self):
         s = StringIO()
-        if self.is_solved():
-            s.write("-------------------------------\n")
-            s.write('Solved Puzzle in %dc and %sb: \n'
-                    ' %d:single \n' 
-                    ' %d:squeeze \n'
-                    ' %d,%d,%d:crosshatch \n'%
-                    (self.constraint_steps, self.puzzle_branches,
-                     self.single_possiblities, self.squeezes,
-                     self.unique_in_square,
-                     self.unique_in_row, self.unique_in_col,
-                     ))
-
+        s.write("-------------------------------\n")
+        s.write(self.status())
         s.write("-------------------------------\n")
         for i in PIDXS:
             s.write('|')
