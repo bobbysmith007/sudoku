@@ -191,29 +191,34 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            self.squeeze_col,
-            self.squeeze_row,
-            self.value_not_placeable_in_square,
             self.value_not_placeable_in_row,
             self.value_not_placeable_in_col,
+            self.value_not_placeable_in_square,
+            self.twins_exclusion_in_square,
             self.twins_exclusion_in_col,
             self.twins_exclusion_in_row,
-            self.twins_exclusion_in_square,
+            # These seem to be not constraing over the others
+            # self.squeeze_col,
+            # self.squeeze_row,
             ]
-        self.stats.constraint_steps+=1
         for cons in constraints:
-            for i,j in self.unsolved_idxs:
-                if self.square_solved(i,j): 
-                    self.unsolved_idxs.remove([i,j])
-                    continue
-                p = self.index_possibilites(i, j)
-                # special case
-                if len(p)==1: self.single_possibility_constraint(p, i, j)
-                elif len(p)>1: p = cons(p, i, j)
-                if len(p)==1:
-                    self.set_puzzle_val(i, j, p.pop())
-                    new_constraint=True
-                elif len(p)==0: raise NoPossibleValues(i,j)
+            innerNew = True
+            while(innerNew):
+                innerNew=False
+                for i,j in self.unsolved_idxs:
+                    self.stats.constraint_steps+=1
+                    if self.square_solved(i,j): 
+                        self.unsolved_idxs.remove([i,j])
+                        continue
+                    p = self.index_possibilites(i, j)
+                    # special case
+                    if len(p)==1: self.single_possibility_constraint(p, i, j)
+                    elif len(p)>1: p = cons(p, i, j)
+                    if len(p)==1:
+                        self.set_puzzle_val(i, j, p.pop())
+                        new_constraint=True
+                        innerNew = True
+                    elif len(p)==0: raise NoPossibleValues(i,j)
 
         if new_constraint: self.constrain()
         
