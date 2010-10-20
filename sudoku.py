@@ -191,7 +191,6 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            self.single_possibility_constraint,
             self.squeeze_col,
             self.squeeze_row,
             self.value_not_placeable_in_square,
@@ -207,7 +206,10 @@ class Sudoku (object):
                 if self.square_solved(i,j): 
                     self.unsolved_idxs.remove([i,j])
                     continue
-                p = cons(self.index_possibilites(i, j), i, j)
+                p = self.index_possibilites(i, j)
+                # special case
+                if len(p)==1: self.single_possibility_constraint(p, i, j)
+                elif len(p)>1: p = cons(p, i, j)
                 if len(p)==1:
                     self.set_puzzle_val(i, j, p.pop())
                     new_constraint=True
@@ -320,42 +322,45 @@ class Sudoku (object):
         me = [row,col]
         fic = self.free_in_col(col)
         fic.remove(me)
-        p = set()
-        if len(fic) == 2:
-            other_pos = self.index_possibilites(*fic[0])
-            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
-                p = pos - other_pos
-        if len(p)==1:
-            self.stats.twins_col_exclusion += 1
-            return p
+        other_pos = self.index_possibilites(*fic[0])
+        shared_constraints = True
+        for i in range(1, len(fic)):
+            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
+        if shared_constraints:
+            p = pos - other_pos
+            if len(p)==1:
+                self.stats.twins_col_exclusion += 1
+                return p
         return pos
 
     def twins_exclusion_in_row(self,pos,row,col):
         me = [row,col]
         fic = self.free_in_row(row)
         fic.remove(me)
-        p = set()
-        if len(fic) == 2:
-            other_pos = self.index_possibilites(*fic[0])
-            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
-                p = pos - other_pos
-        if len(p)==1:
-            self.stats.twins_row_exclusion += 1
-            return p
+        other_pos = self.index_possibilites(*fic[0])
+        shared_constraints = True
+        for i in range(1, len(fic)):
+            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
+        if shared_constraints:
+            p = pos - other_pos
+            if len(p)==1:
+                self.stats.twins_row_exclusion += 1
+                return p
         return pos
 
     def twins_exclusion_in_square(self,pos,row,col):
         me = [row,col]
         fic = self.free_in_square(row,col)
         fic.remove(me)
-        p = set()
-        if len(fic) == 2:
-            other_pos = self.index_possibilites(*fic[0])
-            if len(other_pos)==2 and other_pos == self.index_possibilites(*fic[1]):
-                p = pos - other_pos
-        if len(p)==1:
-            self.stats.twins_square_exclusion += 1
-            return p
+        other_pos = self.index_possibilites(*fic[0])
+        shared_constraints = True
+        for i in range(1, len(fic)):
+            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
+        if shared_constraints:
+            p = pos - other_pos
+            if len(p)==1:
+                self.stats.twins_col_exclusion += 1
+                return p
         return pos
 
 
