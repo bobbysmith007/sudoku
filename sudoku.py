@@ -3,7 +3,7 @@ import re, traceback, types
 import cProfile, pstats, time
 import logging
 from copy import deepcopy
-import puzzles
+import puzzles, puzzles2
 
 logging.basicConfig(level=logging.info)
 
@@ -116,6 +116,18 @@ class Stats (object):
         for k,v in kws.items():
             setattr(self, k, v)
 
+class Index (object):
+    def __init__(self,row,col):
+        self.row,self.col = row,col
+    def __eq__(self, other):
+        return self.row == other.row and self.col == other.col
+    def __str__(self):
+        return "<%s,%s>"%(self.row, self.col)
+    def __repr__(self):
+        return "<%s,%s>"%(self.row, self.col)
+    def __hash__(self):
+        return self.row*100+self.col
+
 class Sudoku (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None,
@@ -124,7 +136,7 @@ class Sudoku (object):
                                     col_squeezes=0, single_possiblities=0, unique_in_row=0,
                                     unique_in_col=0,unique_in_square=0,
                                     twins_col_exclusion=0, twins_row_exclusion=0,
-                                    twins_square_exclusion=0)
+                                    twins_square_exclusion=0, xwing_row=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -191,6 +203,7 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
+            self.xwing_row_constraint,
             self.value_not_placeable_in_row,
             self.value_not_placeable_in_col,
             self.value_not_placeable_in_square,
@@ -254,6 +267,58 @@ class Sudoku (object):
     def single_possibility_constraint(self, pos, row, col):
         if len(pos)==1: self.stats.single_possiblities+=1
         return pos
+
+    def xwing_row_constraint(self, pos, row, col):
+        me = Index(row,col)
+        idxs = [Index(i,j) for i,j in self.unsolved_idxs]
+        offset=1
+        res =[]
+        #find xwing patterns affecting my position
+        for i1 in idxs:
+            if (i1.row != row and i1.col != col) or i1==me: continue
+            for i2 in idxs[offset:]:
+                if i1==i2 or i2.row != i1.row or i2==me: continue
+                for i3 in idxs[offset+1:]:
+                    if i1==i3 or i2==i3 or i3.col != i1.col or i3==me: continue
+                    for i4 in idxs[offset+2:]:
+                        if i4 == me: continue
+                        if i2.col == i4.col and i3.row == i4.row and \
+                                (i1.row ==row or i3.row == row or i1.col == col or i2.col == col):
+
+                            shared = self.index_possibilites(i1.row,i1.col) & \
+                                     self.index_possibilites(i2.row,i2.col) & \
+                                     self.index_possibilites(i3.row,i3.col) & \
+                                     self.index_possibilites(i4.row,i4.col)
+
+                            
+                            #found an xwing pattern that applies to the index we are working on
+                            for j in PIDXS:
+                                if not self.square_solved(i1.row,j) and j!=i1.col and j!=i2.col:
+                                    ip = self.index_possibilites(i1.row,j)
+                                    for i in shared:
+                                        if i in ip: continue;
+
+                            for j in PIDXS:
+                                if not self.square_solved(i3.row,j) and i!=i3.col and i!=i4.col:
+                                    ip = self.index_possibilites(i1.row,j)
+                                    for i in shared:
+                                        if i in ip: continue;
+                            
+                            if me.col == i1.col or me.col == i2.col:
+                                
+                                p = pos - shared
+                                if len(p)==1:
+                                    print "XWING : <%s,%s> to %s by %s\n" % (row,col,p,[i1,i2,i3,i4])
+                                    print me, pos, shared, p
+                                    print i1, self.index_possibilites(i1.row,i1.col)
+                                    print i2, self.index_possibilites(i2.row,i2.col)
+                                    print i3, self.index_possibilites(i3.row,i3.col)
+                                    print i4, self.index_possibilites(i4.row,i4.col)
+                                    print self
+                                    self.stats.xwing_row+=1
+                                    return p
+        return pos
+                            
 
     def squeeze_col(self, pos, row, col):
         """ constrain possibilities by squeezing
