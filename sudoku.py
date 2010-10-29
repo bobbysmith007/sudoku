@@ -1,5 +1,5 @@
 from StringIO import StringIO
-import re, traceback, types
+import re, traceback, types, itertools
 import cProfile, pstats, time
 import logging
 from copy import deepcopy
@@ -94,7 +94,7 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles2.puzzles:
+    for p in puzzles.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()
@@ -123,6 +123,9 @@ class Stats (object):
     def __init__(self,**kws):
         for k,v in kws.items():
             setattr(self, k, v)
+    def inc(self,k,v=1):
+        return setattr(self, k, getattr(self,k)+v)
+        
 
 class Index (object):
     def __init__(self,row,col):
@@ -140,11 +143,12 @@ class Sudoku (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None,
                  stats=None):
-        self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0, row_squeezes=0,
-                                    col_squeezes=0, single_possiblities=0, unique_in_row=0,
+        self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0, 
+                                    # col_squeezes=0, row_squeezes=0,
+                                    single_possiblities=0, unique_in_row=0,
                                     unique_in_col=0,unique_in_square=0,
-                                    twins_col_exclusion=0, twins_row_exclusion=0,
-                                    twins_square_exclusion=0, xwing_row=0, xwing_col=0)
+                                    naked_sets_col=0, naked_sets_row=0,
+                                    naked_sets_square=0, xwing_row=0, xwing_col=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -211,12 +215,12 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            self.value_not_placeable_in_row,
-            self.value_not_placeable_in_col,
-            self.value_not_placeable_in_square,
-            self.twins_exclusion_in_square,
-            self.twins_exclusion_in_col,
-            self.twins_exclusion_in_row,
+            self.unique_possibility_in_row,
+            self.unique_possibility_in_col,
+            self.unique_possibility_in_square,
+            self.naked_sets_exclusion_in_col,
+            self.naked_sets_exclusion_in_square,
+            self.naked_sets_exclusion_in_row,
             self.xwing_col_constraint,
             self.xwing_row_constraint,
 
@@ -369,94 +373,71 @@ class Sudoku (object):
                     return set([v])
         return pos
 
-    def value_not_placeable_in_square(self,pos,row,col):
+    def _unique_possibility_helper(self, cells, pos, name):
+        for v in pos:
+            not_allowed_elsewhere = \
+                all([not v in self.index_possibilites(i, j)
+                     for i,j in cells])
+            if not_allowed_elsewhere:
+                self.stats.inc(name)
+                return set([v])
+        return pos
+
+    def unique_possibility_in_square(self,pos,row,col):
         """ constrain possibilities by crosshatching
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
-        #unpos = deepcopy(pos)
-        #print "Cross Hatching <%s,%s> to %s" % (row, col, v)
-        for v in pos:
-            not_allowed_elsewhere = True
-            sqrs = self.free_in_square(row, col)
-            sqrs.remove([row,col]) #remove me from the current square
-            for i,j in sqrs:
-                not_allowed_elsewhere &= not v in self.index_possibilites(i, j)
-            if not_allowed_elsewhere:
-                self.stats.unique_in_square+=1
-                return set([v])
-        return pos
+        cells = self.free_in_square(row, col)
+        cells.remove([row,col])
+        return self._unique_possibility_helper( cells, pos, 'unique_in_square')
 
-    def value_not_placeable_in_row(self,pos,row,col):
+    def unique_possibility_in_row(self,pos,row,col):
         """ constrain possibilities by crosshatching
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
-        for v in pos:
-            not_allowed_elsewhere = True
-            
-            for j in PIDXS - set([col]):
-                not_allowed_elsewhere &= \
-                    not v in self.index_possibilites(row, j)
-            if not_allowed_elsewhere: 
-                self.stats.unique_in_row+=1
-                return set([v])
-        return pos
+        cells = self.free_in_row(row)
+        cells.remove([row,col])
+        return self._unique_possibility_helper(cells, pos, 'unique_in_row')
 
-    def value_not_placeable_in_col(self,pos,row,col):
-        for v in pos:
-            not_allowed_elsewhere = True
-            for i in PIDXS - set([row]):
-                not_allowed_elsewhere &= \
-                    not v in self.index_possibilites(i, col)
-            if not_allowed_elsewhere:
-                self.stats.unique_in_col+=1
-                return set([v])
-        return pos
+    def unique_possibility_in_col(self,pos,row,col):
+        cells = self.free_in_col(col)
+        cells.remove([row,col])
+        return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
-    def twins_exclusion_in_col(self,pos,row,col):
+    def _naked_sets_helper(self, free_list ,pos, name):
+        kfn = lambda x:self.index_possibilites(*x)
+        free_list.sort(key=kfn)
+        # naked sets
+        groups = [(i,gl) 
+                  for i,g in itertools.groupby(free_list, kfn)
+                  for gl in [list(g)]
+                  if len(gl) == len(i)]
+        if len(groups)>0:
+            # print "NAKED COL SET", groups
+            for not_pos, idxs in groups:
+                p = pos - not_pos
+                if len(p)==1:
+                    self.stats.inc(name)
+                    return p
+        return pos
+        
+    def naked_sets_exclusion_in_col(self,pos,row,col):
         me = [row,col]
         fic = self.free_in_col(col)
         fic.remove(me)
-        other_pos = self.index_possibilites(*fic[0])
-        shared_constraints = True
-        for i in range(1, len(fic)):
-            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
-        if shared_constraints:
-            p = pos - other_pos
-            if len(p)==1:
-                self.stats.twins_col_exclusion += 1
-                return p
-        return pos
+        return self._naked_sets_helper(fic,pos,'naked_sets_col')
 
-    def twins_exclusion_in_row(self,pos,row,col):
+    def naked_sets_exclusion_in_row(self,pos,row,col):
         me = [row,col]
         fic = self.free_in_row(row)
         fic.remove(me)
-        other_pos = self.index_possibilites(*fic[0])
-        shared_constraints = True
-        for i in range(1, len(fic)):
-            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
-        if shared_constraints:
-            p = pos - other_pos
-            if len(p)==1:
-                self.stats.twins_row_exclusion += 1
-                return p
-        return pos
+        return self._naked_sets_helper(fic,pos,'naked_sets_row')
 
-    def twins_exclusion_in_square(self,pos,row,col):
+    def naked_sets_exclusion_in_square(self,pos,row,col):
         me = [row,col]
         fic = self.free_in_square(row,col)
         fic.remove(me)
-        other_pos = self.index_possibilites(*fic[0])
-        shared_constraints = True
-        for i in range(1, len(fic)):
-            shared_constraints &= other_pos == self.index_possibilites(*fic[i])
-        if shared_constraints:
-            p = pos - other_pos
-            if len(p)==1:
-                self.stats.twins_col_exclusion += 1
-                return p
-        return pos
-
+        return self._naked_sets_helper(fic,pos,'naked_sets_square')
 
     def index_constraints(self,row,col):
         knowns = set()
@@ -488,7 +469,9 @@ class Sudoku (object):
         del stats['puzzle_branches']
         s.write("  %s - Constraint Cycles\n" % self.stats.constraint_steps)
         s.write("  %s - Branches\n\n" % self.stats.puzzle_branches)
-        for k,v in stats.items():
+        items = stats.items()
+        items.sort()
+        for k,v in items:
             s.write('  %s : %s \n' % (k,v))
         s = s.getvalue()
         logging.info(s)
