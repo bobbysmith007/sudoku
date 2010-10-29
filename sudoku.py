@@ -157,12 +157,12 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            self.unique_possibility_in_row,
-            self.unique_possibility_in_col,
-            self.unique_possibility_in_square,
             self.naked_sets_exclusion_in_col,
             self.naked_sets_exclusion_in_square,
             self.naked_sets_exclusion_in_row,
+            self.unique_possibility_in_row,
+            self.unique_possibility_in_col,
+            self.unique_possibility_in_square,
             self.xwing_col_constraint,
             self.xwing_row_constraint,
 
@@ -366,8 +366,40 @@ class Sudoku (object):
         # naked sets
         groups = [(i,gl) 
                   for i,g in itertools.groupby(free_list, self.index_possibilites)
-                  for gl in [list(g)]
-                  if len(gl) == len(i)]
+                  for gl in [list(g)]]
+        kfn = lambda x: len(x[0])
+        groups.sort(key=kfn)
+        naked_groups=[]
+        not_naked = []
+        for i1, gl1 in groups:
+            if len(i1) == len(gl1) and len(i1) > 1 :
+                naked_groups.append((i1,gl1))
+            else:
+                not_naked.append((i1,gl1))
+
+        def fn():
+            ahead = 1
+            not_naked.sort(key=kfn)
+            for i1,gl1 in not_naked:
+                for i2, gl2 in not_naked[ahead:]:
+                    if i1 <= i2: #subset
+                        # the intersection of the possibilites is the length of the indexes
+                        if len(gl1)+len(gl2) == len(i2):
+                            not_naked.remove((i1,gl1))
+                            not_naked.remove((i2,gl2))
+                            naked_groups.append((i2,gl1+gl2))
+                            self.stats.inc(name+'_complex_constraint')
+                            return True
+                        else:
+                            not_naked.remove((i1,gl1))
+                            not_naked.remove((i2,gl2))
+                            not_naked.append((i2,gl1+gl2))
+                            return True
+                ahead +=1
+        while(fn()):pass    
+                            
+                            
+                    
 
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -376,22 +408,23 @@ class Sudoku (object):
         # I think this doesnt matter because we would be investigating from
         # another nodes perspective in a little while.  Proof of constraint
         # propogation working though I suppose
-        for not_pos,gl in groups:
+        for not_pos,gl in naked_groups:
             for cell in free_list:
                 if not cell in gl:
                     to_tell = self.index_possibilites(cell)
                     for i in not_pos: 
                         if i in to_tell: 
                             self._constrained_this_cycle=True
+                            self.stats.inc(name+'_contraint')
                             to_tell.remove(i)
 
-        if len(groups)>0:
-            # print "NAKED COL SET", groups
-            for not_pos, idxs in groups:
-                p = pos - not_pos
-                if len(p)==1:
-                    self.stats.inc(name)
-                    return p
+#        if len(groups)>0:
+#            # print "NAKED COL SET", groups
+#            for not_pos, idxs in groups:
+#                p = pos - not_pos
+#                if len(p)==1:
+#                    self.stats.inc(name)
+#                    return p
         return pos
         
     def naked_sets_exclusion_in_col(self,pos,idx):
