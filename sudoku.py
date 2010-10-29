@@ -48,6 +48,14 @@ class Memoize(object):
             self.memo[args] = self.fn(*args)
         return self.memo[args]
 
+class PosCount(object):
+    def __init__(self, cnt=0, idxs=None):
+        self.cnt,self.idxs=cnt,idxs or []
+    def __repr__(self):
+        return "|%d|"%self.cnt
+    def __str__(self):
+        return "|%d|"%self.cnt
+
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
               for i in PIDXS]
@@ -86,7 +94,7 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles:
+    for p in puzzles2.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()
@@ -136,7 +144,7 @@ class Sudoku (object):
                                     col_squeezes=0, single_possiblities=0, unique_in_row=0,
                                     unique_in_col=0,unique_in_square=0,
                                     twins_col_exclusion=0, twins_row_exclusion=0,
-                                    twins_square_exclusion=0, xwing_row=0)
+                                    twins_square_exclusion=0, xwing_row=0, xwing_col=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -203,13 +211,15 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
-            self.xwing_row_constraint,
             self.value_not_placeable_in_row,
             self.value_not_placeable_in_col,
             self.value_not_placeable_in_square,
             self.twins_exclusion_in_square,
             self.twins_exclusion_in_col,
             self.twins_exclusion_in_row,
+            self.xwing_col_constraint,
+            self.xwing_row_constraint,
+
             # These seem to be not constraing over the others
             # self.squeeze_col,
             # self.squeeze_row,
@@ -269,56 +279,70 @@ class Sudoku (object):
         return pos
 
     def xwing_row_constraint(self, pos, row, col):
-        me = Index(row,col)
-        idxs = [Index(i,j) for i,j in self.unsolved_idxs]
-        offset=1
-        res =[]
-        #find xwing patterns affecting my position
-        for i1 in idxs:
-            if (i1.row != row and i1.col != col) or i1==me: continue
-            for i2 in idxs[offset:]:
-                if i1==i2 or i2.row != i1.row or i2==me: continue
-                for i3 in idxs[offset+1:]:
-                    if i1==i3 or i2==i3 or i3.col != i1.col or i3==me: continue
-                    for i4 in idxs[offset+2:]:
-                        if i4 == me: continue
-                        if i2.col == i4.col and i3.row == i4.row and \
-                                (i1.row ==row or i3.row == row or i1.col == col or i2.col == col):
+        posCounts = [[PosCount() for i in range(0,9)]
+                     for i in range(0,9)]
+        for i,j in self.unsolved_idxs:
+            for val in self.index_possibilites(i, j):
+                posCounts[i][val-1].cnt+=1
+                posCounts[i][val-1].idxs.append([i,j])
+        p = deepcopy(pos)
 
-                            shared = self.index_possibilites(i1.row,i1.col) & \
-                                     self.index_possibilites(i2.row,i2.col) & \
-                                     self.index_possibilites(i3.row,i3.col) & \
-                                     self.index_possibilites(i4.row,i4.col)
-
-                            
-                            #found an xwing pattern that applies to the index we are working on
-                            for j in PIDXS:
-                                if not self.square_solved(i1.row,j) and j!=i1.col and j!=i2.col:
-                                    ip = self.index_possibilites(i1.row,j)
-                                    for i in shared:
-                                        if i in ip: continue;
-
-                            for j in PIDXS:
-                                if not self.square_solved(i3.row,j) and i!=i3.col and i!=i4.col:
-                                    ip = self.index_possibilites(i1.row,j)
-                                    for i in shared:
-                                        if i in ip: continue;
-                            
-                            if me.col == i1.col or me.col == i2.col:
-                                
-                                p = pos - shared
-                                if len(p)==1:
-                                    print "XWING : <%s,%s> to %s by %s\n" % (row,col,p,[i1,i2,i3,i4])
-                                    print me, pos, shared, p
-                                    print i1, self.index_possibilites(i1.row,i1.col)
-                                    print i2, self.index_possibilites(i2.row,i2.col)
-                                    print i3, self.index_possibilites(i3.row,i3.col)
-                                    print i4, self.index_possibilites(i4.row,i4.col)
-                                    print self
-                                    self.stats.xwing_row+=1
-                                    return p
+        for val in p:
+            i1=None
+            i2=None
+            for i in PIDXS:
+                if i!=row and posCounts[i][val-1].cnt==2: # 2 cells share this pos
+                    if i1: i2=i
+                    else: i1=i
+            if i1 and i2:
+                c1,c2 = posCounts[i1][val-1].idxs
+                c3,c4 = posCounts[i2][val-1].idxs
+                if c1[1]>c2[1]: c1,c2 = c2,c1 
+                if c3[1]>c4[1]: c3,c4 = c4,c3
+                if c1[1]!=c3[1] or c2[1]!=c4[1]: continue # not an xwing square
+                if c1[1]!=col and c2[1]!=col: continue # not relevant to me
+                # we have an xwing square
+                pos = pos - set([val])
+                if len(pos) == 1 : 
+                    #print "XWING : <%s,%s> to %s\n" % (row,col,pos)
+                    #print c1, self.index_possibilites(*c1)
+                    #print c2, self.index_possibilites(*c2)
+                    #print c3, self.index_possibilites(*c3)
+                    #print c4, self.index_possibilites(*c4)
+                    self.stats.xwing_row+=1
+                    return pos
         return pos
-                            
+
+    def xwing_col_constraint(self, pos, row, col):
+        posCounts = [[PosCount() for i in range(0,9)]
+                     for i in range(0,9)]
+        for i,j in self.unsolved_idxs:
+            for val in self.index_possibilites(i, j):
+                posCounts[j][val-1].cnt+=1
+                posCounts[j][val-1].idxs.append([i,j])
+        p = deepcopy(pos)
+
+        for val in p:
+            j1=None
+            j2=None
+            for j in PIDXS:
+                if j!=col and posCounts[j][val-1].cnt==2: # 2 cells share this pos
+                    if j1: j2=j
+                    else: j1=j
+            if j1 and j2:
+                c1,c2 = posCounts[j1][val-1].idxs
+                c3,c4 = posCounts[j2][val-1].idxs
+                if c1[1]>c2[1]: c1,c2 = c2,c1 
+                if c3[1]>c4[1]: c3,c4 = c4,c3
+                if c1[1]!=c3[1] or c2[1]!=c4[1]: continue # not an xwing square
+                if c1[1]!=col and c2[1]!=col: continue # not relevant to me
+                # we have an xwing square
+                pos = pos - set([val])
+                if len(pos) == 1 : 
+                    self.stats.xwing_col+=1
+                    return pos
+        return pos
+
 
     def squeeze_col(self, pos, row, col):
         """ constrain possibilities by squeezing
