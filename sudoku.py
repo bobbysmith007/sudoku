@@ -227,7 +227,10 @@ class Sudoku (object):
             self.squeeze_row,
             ]
         def fn():
+            self._constrained_this_cycle = False
             for cons in constraints:
+                # TODO: if we successfully constrain a square furthur, but dont find anything 
+                # we should restart
                 for i,j in self.unsolved_idxs:
                     self.stats.constraint_steps+=1
                     if self.square_solved(i,j): 
@@ -242,6 +245,7 @@ class Sudoku (object):
                         self.set_puzzle_val(i,j,p.pop())
                         return True
                     elif len(p)==0: raise NoPossibleValues(i,j)
+            return self._constrained_this_cycle
         while(fn()): pass
         
     def free_in_row(self, row):
@@ -255,6 +259,14 @@ class Sudoku (object):
 
     def free_square_row(self, row, col):
         return [i for i in square_idxs(row) if not self.square_solved(i, col)]
+
+    def free_related_cells(self, row, col):
+        return self.free_in_row(row)+self.free_in_col(col)+self.free_in_square(row, col)
+
+    def free_related_possibilities(self, row, col):
+        return [self.index_possibilites(i,j)
+                for i,j in self.free_related_cells(row,col)
+                if not (i==row and j==col)]
 
     def free_square_col(self, row, col):
         return [j for j in square_idxs(col) if not self.square_solved(row, j)]
@@ -395,8 +407,14 @@ class Sudoku (object):
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
     def hidden_set_possibility_reduction(self):
-        for i,j in self.unsolved_idxs:
-            pass
+        kfn = lambda x:self.index_possibilites(*x)
+        cells = deepcopy(self.unsolved_idxs)
+        cells.sort(key=kfn)
+        # hidden sets
+        groups = [[self.index_possibilites(i,j) for i,j in gl]
+                  for p,g in itertools.groupby(free_list, kfn)
+                  for gl in [list(g)]
+                  if len(gl) == len(i)]
 
     def _naked_sets_helper(self, free_list ,pos, name):
         kfn = lambda x:self.index_possibilites(*x)
@@ -406,6 +424,24 @@ class Sudoku (object):
                   for i,g in itertools.groupby(free_list, kfn)
                   for gl in [list(g)]
                   if len(gl) == len(i)]
+        
+
+        # if we know these possiblities are being
+        # used up in the naked set, might as well remove them
+        # from everyone elses possibilities
+        #
+        # I think this doesnt matter because we would be investigating from
+        # another nodes perspective in a little while.  Proof of constraint
+        # propogation working though I suppose
+        for not_pos,gl in groups:
+            for cell in free_list:
+                if not cell in gl:
+                    to_tell = self.index_possibilites(*cell)
+                    for i in not_pos: 
+                        if i in to_tell: 
+                            self._constrained_this_cycle=True
+                            to_tell.remove(i)
+
         if len(groups)>0:
             # print "NAKED COL SET", groups
             for not_pos, idxs in groups:
