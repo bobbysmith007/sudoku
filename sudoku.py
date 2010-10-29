@@ -352,15 +352,6 @@ class Sudoku (object):
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
-    def hidden_set_possibility_reduction(self):
-        cells = list(self.unsolved_idxs)
-        cells.sort(key=self.index_possibilites)
-        # hidden sets
-        #groups = [[self.index_possibilites(i) for i in gl]
-        #          for p,g in itertools.groupby(free_list, self.index_possibilites)
-        #          for gl in [list(g)]
-        #          if len(gl) == len(i)]
-
     def _naked_sets_helper(self, free_list ,pos, name):
         free_list.sort(key=self.index_possibilites)
         # naked sets
@@ -396,18 +387,30 @@ class Sudoku (object):
                             not_naked.append((i2,gl1+gl2))
                             return True
                 ahead +=1
-        while(fn()):pass    
-                            
-                            
-                    
-
+        while(fn()):pass
+        
+        # handle hidden sets -- never triggering currently
+        for i, gl in not_naked:
+            if len(gl) <= 2: continue # cant be hidden
+            p = [self.index_possibilites(x) for x in gl]
+            p.sort(key=len)
+            maxp = p[-1] # longest pos list
+            shared = p[1] # shortest pos list
+            for p in p[1:-1]: shared = shared & p # union the rest of the short lists together
+            shared = maxp | shared # remove all the shared items from the longest pos list
+            if len(shared) == len(gl): # if we only share as many pos as cells
+                self.stats.append('hidden_set_constraint')
+                self.naked_groups.add((shared,gl))
+                self.not_naked.remove((i,gl))
+                for p in [self.index_possibilites(x)
+                          for x in gl]:
+                    for v in list(p):
+                        if v not in shared:
+                            p.remove(v)
+        
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
         # from everyone elses possibilities
-        #
-        # I think this doesnt matter because we would be investigating from
-        # another nodes perspective in a little while.  Proof of constraint
-        # propogation working though I suppose
         for not_pos,gl in naked_groups:
             for cell in free_list:
                 if not cell in gl:
@@ -418,6 +421,8 @@ class Sudoku (object):
                             self.stats.inc(name+'_contraint')
                             to_tell.remove(i)
 
+        # if I want to resolve the current square based on this I should uncomment,
+        # but i want it to work just by removing possibilites now
 #        if len(groups)>0:
 #            # print "NAKED COL SET", groups
 #            for not_pos, idxs in groups:
@@ -528,7 +533,7 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
-    for p in puzzles.puzzles:
+    for p in puzzles2.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()

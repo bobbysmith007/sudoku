@@ -1,3 +1,4 @@
+
 puzzles = [
 # 1 med
 """
