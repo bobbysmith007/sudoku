@@ -1,0 +1,577 @@
+>>> reload( sudoku )
+Starting puzzle 1
+-------------------------------
+Solved Puzzle: 
+  186 - Constraint Cycles
+  1 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 17 
+  col_squeezes : 0 
+  single_possiblities : 32 
+  xwing_row : 0 
+  unique_in_col : 0 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 4  7  6 | 1  5  3 | 9  2  8 |
+| 3  2  9 | 6  8  7 | 1  4  5 |
+| 5  1  8 | 4  2  9 | 7  6  3 |
+-------------------------------
+| 2  8  4 | 7  1  5 | 3  9  6 |
+| 1  6  7 | 9  3  2 | 5  8  4 |
+| 9  5  3 | 8  4  6 | 2  1  7 |
+-------------------------------
+| 8  3  5 | 2  6  1 | 4  7  9 |
+| 6  9  1 | 5  7  4 | 8  3  2 |
+| 7  4  2 | 3  9  8 | 6  5  1 |
+-------------------------------
+
+Done with puzzle 1 in 0.127950906754 sec
+Starting puzzle 2
+-------------------------------
+Solved Puzzle: 
+  1483 - Constraint Cycles
+  4 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 29 
+  col_squeezes : 0 
+  single_possiblities : 34 
+  xwing_row : 0 
+  unique_in_col : 2 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 8  2  6 | 3  5  9 | 7  1  4 |
+| 3  1  5 | 7  2  4 | 9  6  8 |
+| 4  9  7 | 1  8  6 | 5  2  3 |
+-------------------------------
+| 2  7  9 | 8  6  3 | 1  4  5 |
+| 6  5  8 | 4  1  7 | 2  3  9 |
+| 1  4  3 | 2  9  5 | 8  7  6 |
+-------------------------------
+| 7  3  2 | 5  4  8 | 6  9  1 |
+| 5  6  4 | 9  7  1 | 3  8  2 |
+| 9  8  1 | 6  3  2 | 4  5  7 |
+-------------------------------
+
+Done with puzzle 2 in 0.786956071854 sec
+Starting puzzle 3
+-------------------------------
+Solved Puzzle: 
+  213 - Constraint Cycles
+  1 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 17 
+  col_squeezes : 0 
+  single_possiblities : 34 
+  xwing_row : 0 
+  unique_in_col : 0 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 6  8  4 | 2  9  5 | 3  1  7 |
+| 2  7  9 | 3  8  1 | 4  6  5 |
+| 3  5  1 | 4  7  6 | 9  8  2 |
+-------------------------------
+| 4  1  7 | 6  5  9 | 2  3  8 |
+| 9  3  2 | 1  4  8 | 5  7  6 |
+| 8  6  5 | 7  3  2 | 1  9  4 |
+-------------------------------
+| 5  2  8 | 9  6  3 | 7  4  1 |
+| 1  4  3 | 8  2  7 | 6  5  9 |
+| 7  9  6 | 5  1  4 | 8  2  3 |
+-------------------------------
+
+Done with puzzle 3 in 0.125739097595 sec
+Starting puzzle 4
+-------------------------------
+Solved Puzzle: 
+  432 - Constraint Cycles
+  1 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 4 
+  col_squeezes : 0 
+  single_possiblities : 33 
+  xwing_row : 0 
+  unique_in_col : 2 
+  twins_col_exclusion : 0 
+  unique_in_square : 12 
+  twins_square_exclusion : 0 
+-------------------------------
+| 3  5  7 | 9  2  4 | 6  1  8 |
+| 6  4  1 | 8  5  3 | 7  2  9 |
+| 8  9  2 | 7  6  1 | 3  5  4 |
+-------------------------------
+| 7  3  9 | 6  4  5 | 1  8  2 |
+| 1  6  5 | 2  3  8 | 9  4  7 |
+| 2  8  4 | 1  7  9 | 5  3  6 |
+-------------------------------
+| 5  7  6 | 3  8  2 | 4  9  1 |
+| 4  1  8 | 5  9  7 | 2  6  3 |
+| 9  2  3 | 4  1  6 | 8  7  5 |
+-------------------------------
+
+Done with puzzle 4 in 0.25482416153 sec
+Starting puzzle 5
+-------------------------------
+Solved Puzzle: 
+  3760 - Constraint Cycles
+  7 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 38 
+  col_squeezes : 0 
+  single_possiblities : 78 
+  xwing_row : 1 
+  unique_in_col : 9 
+  twins_col_exclusion : 0 
+  unique_in_square : 4 
+  twins_square_exclusion : 0 
+-------------------------------
+| 8  5  9 | 6  1  2 | 4  3  7 |
+| 7  2  3 | 8  5  4 | 1  6  9 |
+| 1  6  4 | 3  7  9 | 5  2  8 |
+-------------------------------
+| 9  8  6 | 1  4  7 | 3  5  2 |
+| 3  7  5 | 2  6  8 | 9  1  4 |
+| 2  4  1 | 5  9  3 | 7  8  6 |
+-------------------------------
+| 4  3  2 | 9  8  1 | 6  7  5 |
+| 6  1  7 | 4  2  5 | 8  9  3 |
+| 5  9  8 | 7  3  6 | 2  4  1 |
+-------------------------------
+
+Done with puzzle 5 in 2.89873218536 sec
+Starting puzzle 6
+-------------------------------
+Solved Puzzle: 
+  21399 - Constraint Cycles
+  55 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 241 
+  col_squeezes : 0 
+  single_possiblities : 414 
+  xwing_row : 0 
+  unique_in_col : 64 
+  twins_col_exclusion : 0 
+  unique_in_square : 14 
+  twins_square_exclusion : 0 
+-------------------------------
+| 1  4  5 | 3  2  7 | 6  9  8 |
+| 8  3  9 | 6  5  4 | 1  2  7 |
+| 6  7  2 | 9  1  8 | 5  4  3 |
+-------------------------------
+| 4  9  6 | 1  8  5 | 3  7  2 |
+| 2  1  8 | 4  7  3 | 9  5  6 |
+| 7  5  3 | 2  9  6 | 4  8  1 |
+-------------------------------
+| 3  6  7 | 5  4  2 | 8  1  9 |
+| 9  8  4 | 7  6  1 | 2  3  5 |
+| 5  2  1 | 8  3  9 | 7  6  4 |
+-------------------------------
+
+Done with puzzle 6 in 15.8611218929 sec
+Starting puzzle 7
+-------------------------------
+Solved Puzzle: 
+  11217 - Constraint Cycles
+  25 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 9 
+  col_squeezes : 0 
+  single_possiblities : 24 
+  xwing_row : 0 
+  unique_in_col : 7 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 3  8  4 | 5  6  2 | 7  1  9 |
+| 6  5  9 | 4  1  7 | 2  3  8 |
+| 2  7  1 | 9  3  8 | 6  4  5 |
+-------------------------------
+| 1  4  5 | 2  7  9 | 8  6  3 |
+| 8  9  3 | 6  5  4 | 1  2  7 |
+| 7  2  6 | 1  8  3 | 9  5  4 |
+-------------------------------
+| 9  1  8 | 3  2  5 | 4  7  6 |
+| 4  3  2 | 7  9  6 | 5  8  1 |
+| 5  6  7 | 8  4  1 | 3  9  2 |
+-------------------------------
+
+Done with puzzle 7 in 10.4909741879 sec
+Starting puzzle 8
+-------------------------------
+Solved Puzzle: 
+  3760 - Constraint Cycles
+  7 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 38 
+  col_squeezes : 0 
+  single_possiblities : 78 
+  xwing_row : 1 
+  unique_in_col : 9 
+  twins_col_exclusion : 0 
+  unique_in_square : 4 
+  twins_square_exclusion : 0 
+-------------------------------
+| 8  5  9 | 6  1  2 | 4  3  7 |
+| 7  2  3 | 8  5  4 | 1  6  9 |
+| 1  6  4 | 3  7  9 | 5  2  8 |
+-------------------------------
+| 9  8  6 | 1  4  7 | 3  5  2 |
+| 3  7  5 | 2  6  8 | 9  1  4 |
+| 2  4  1 | 5  9  3 | 7  8  6 |
+-------------------------------
+| 4  3  2 | 9  8  1 | 6  7  5 |
+| 6  1  7 | 4  2  5 | 8  9  3 |
+| 5  9  8 | 7  3  6 | 2  4  1 |
+-------------------------------
+
+Done with puzzle 8 in 2.7926928997 sec
+Starting puzzle 9
+-------------------------------
+Solved Puzzle: 
+  21399 - Constraint Cycles
+  55 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 241 
+  col_squeezes : 0 
+  single_possiblities : 414 
+  xwing_row : 0 
+  unique_in_col : 64 
+  twins_col_exclusion : 0 
+  unique_in_square : 14 
+  twins_square_exclusion : 0 
+-------------------------------
+| 1  4  5 | 3  2  7 | 6  9  8 |
+| 8  3  9 | 6  5  4 | 1  2  7 |
+| 6  7  2 | 9  1  8 | 5  4  3 |
+-------------------------------
+| 4  9  6 | 1  8  5 | 3  7  2 |
+| 2  1  8 | 4  7  3 | 9  5  6 |
+| 7  5  3 | 2  9  6 | 4  8  1 |
+-------------------------------
+| 3  6  7 | 5  4  2 | 8  1  9 |
+| 9  8  4 | 7  6  1 | 2  3  5 |
+| 5  2  1 | 8  3  9 | 7  6  4 |
+-------------------------------
+
+Done with puzzle 9 in 17.5883350372 sec
+Starting puzzle 10
+-------------------------------
+Solved Puzzle: 
+  4486 - Constraint Cycles
+  13 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 33 
+  col_squeezes : 0 
+  single_possiblities : 106 
+  xwing_row : 0 
+  unique_in_col : 36 
+  twins_col_exclusion : 0 
+  unique_in_square : 5 
+  twins_square_exclusion : 0 
+-------------------------------
+| 1  2  8 | 5  4  7 | 6  3  9 |
+| 3  4  5 | 8  6  9 | 2  1  7 |
+| 6  7  9 | 2  1  3 | 5  4  8 |
+-------------------------------
+| 9  1  2 | 4  8  6 | 3  7  5 |
+| 7  8  4 | 3  5  2 | 1  9  6 |
+| 5  3  6 | 7  9  1 | 4  8  2 |
+-------------------------------
+| 8  9  1 | 6  2  4 | 7  5  3 |
+| 4  6  7 | 9  3  5 | 8  2  1 |
+| 2  5  3 | 1  7  8 | 9  6  4 |
+-------------------------------
+
+Done with puzzle 10 in 2.87571191788 sec
+Starting puzzle 11
+^[[6~-------------------------------
+Solved Puzzle: 
+  14620 - Constraint Cycles
+  37 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 199 
+  col_squeezes : 0 
+  single_possiblities : 290 
+  xwing_row : 0 
+  unique_in_col : 11 
+  twins_col_exclusion : 0 
+  unique_in_square : 25 
+  twins_square_exclusion : 0 
+-------------------------------
+| 6  2  4 | 5  7  8 | 1  3  9 |
+| 1  3  5 | 4  9  6 | 8  2  7 |
+| 7  8  9 | 1  2  3 | 4  5  6 |
+-------------------------------
+| 2  1  6 | 3  8  5 | 7  9  4 |
+| 8  5  7 | 9  6  4 | 2  1  3 |
+| 4  9  3 | 2  1  7 | 6  8  5 |
+-------------------------------
+| 9  4  2 | 6  5  1 | 3  7  8 |
+| 5  6  8 | 7  3  2 | 9  4  1 |
+| 3  7  1 | 8  4  9 | 5  6  2 |
+-------------------------------
+
+Done with puzzle 11 in 11.1240510941 sec
+Starting puzzle 12
+-------------------------------
+Solved Puzzle: 
+  454 - Constraint Cycles
+  1 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 18 
+  col_squeezes : 0 
+  single_possiblities : 41 
+  xwing_row : 0 
+  unique_in_col : 0 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 7  9  6 | 1  5  2 | 3  8  4 |
+| 5  3  1 | 4  6  8 | 9  2  7 |
+| 4  2  8 | 3  7  9 | 6  5  1 |
+-------------------------------
+| 1  5  2 | 6  3  4 | 7  9  8 |
+| 3  8  4 | 7  9  1 | 2  6  5 |
+| 9  6  7 | 2  8  5 | 1  4  3 |
+-------------------------------
+| 2  1  9 | 8  4  3 | 5  7  6 |
+| 6  4  5 | 9  1  7 | 8  3  2 |
+| 8  7  3 | 5  2  6 | 4  1  9 |
+-------------------------------
+
+Done with puzzle 12 in 0.26557302475 sec
+Starting puzzle 13
+-------------------------------
+Solved Puzzle: 
+  7328 - Constraint Cycles
+  17 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 60 
+  col_squeezes : 0 
+  single_possiblities : 100 
+  xwing_row : 0 
+  unique_in_col : 7 
+  twins_col_exclusion : 0 
+  unique_in_square : 9 
+  twins_square_exclusion : 0 
+-------------------------------
+| 1  6  2 | 8  5  7 | 4  9  3 |
+| 5  3  4 | 1  2  9 | 6  7  8 |
+| 7  8  9 | 6  4  3 | 5  2  1 |
+-------------------------------
+| 4  7  5 | 3  1  2 | 9  8  6 |
+| 9  1  3 | 5  8  6 | 7  4  2 |
+| 6  2  8 | 7  9  4 | 1  3  5 |
+-------------------------------
+| 3  5  6 | 4  7  8 | 2  1  9 |
+| 2  4  1 | 9  3  5 | 8  6  7 |
+| 8  9  7 | 2  6  1 | 3  5  4 |
+-------------------------------
+
+Done with puzzle 13 in 5.53593492508 sec
+Starting puzzle 14
+-------------------------------
+Solved Puzzle: 
+  2148 - Constraint Cycles
+  6 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 33 
+  col_squeezes : 0 
+  single_possiblities : 44 
+  xwing_row : 0 
+  unique_in_col : 3 
+  twins_col_exclusion : 0 
+  unique_in_square : 2 
+  twins_square_exclusion : 0 
+-------------------------------
+| 1  5  2 | 9  3  4 | 6  8  7 |
+| 7  6  3 | 8  2  1 | 5  4  9 |
+| 9  8  4 | 5  6  7 | 3  2  1 |
+-------------------------------
+| 6  1  8 | 4  9  3 | 2  7  5 |
+| 3  7  5 | 1  8  2 | 4  9  6 |
+| 2  4  9 | 7  5  6 | 8  1  3 |
+-------------------------------
+| 5  2  1 | 3  7  8 | 9  6  4 |
+| 4  3  6 | 2  1  9 | 7  5  8 |
+| 8  9  7 | 6  4  5 | 1  3  2 |
+-------------------------------
+
+Done with puzzle 14 in 2.59317111969 sec
+Starting puzzle 15
+-------------------------------
+Solved Puzzle: 
+  1936 - Constraint Cycles
+  10 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 49 
+  col_squeezes : 0 
+  single_possiblities : 92 
+  xwing_row : 0 
+  unique_in_col : 1 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 3  8  7 | 9  2  6 | 4  1  5 |
+| 5  4  6 | 8  1  3 | 9  7  2 |
+| 1  9  2 | 4  7  5 | 8  3  6 |
+-------------------------------
+| 2  3  5 | 7  4  9 | 1  6  8 |
+| 9  6  1 | 2  5  8 | 7  4  3 |
+| 4  7  8 | 6  3  1 | 5  2  9 |
+-------------------------------
+| 7  5  4 | 3  8  2 | 6  9  1 |
+| 6  1  3 | 5  9  7 | 2  8  4 |
+| 8  2  9 | 1  6  4 | 3  5  7 |
+-------------------------------
+
+Done with puzzle 15 in 1.4668738842 sec
+Starting puzzle 16
+-------------------------------
+Solved Puzzle: 
+  1781 - Constraint Cycles
+  3 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 5 
+  col_squeezes : 0 
+  single_possiblities : 28 
+  xwing_row : 0 
+  unique_in_col : 22 
+  twins_col_exclusion : 0 
+  unique_in_square : 0 
+  twins_square_exclusion : 0 
+-------------------------------
+| 8  6  9 | 5  7  4 | 1  3  2 |
+| 1  2  4 | 3  9  6 | 7  5  8 |
+| 3  7  5 | 1  2  8 | 6  9  4 |
+-------------------------------
+| 9  3  2 | 8  5  7 | 4  1  6 |
+| 5  4  1 | 6  3  2 | 8  7  9 |
+| 7  8  6 | 9  4  1 | 3  2  5 |
+-------------------------------
+| 2  1  7 | 4  6  9 | 5  8  3 |
+| 4  9  3 | 7  8  5 | 2  6  1 |
+| 6  5  8 | 2  1  3 | 9  4  7 |
+-------------------------------
+
+Done with puzzle 16 in 1.82416200638 sec
+Starting puzzle 17
+-------------------------------
+Solved Puzzle: 
+  2037 - Constraint Cycles
+  6 - Branches
+
+  twins_row_exclusion : 0 
+  row_squeezes : 0 
+  unique_in_row : 49 
+  col_squeezes : 0 
+  single_possiblities : 56 
+  xwing_row : 0 
+  unique_in_col : 1 
+  twins_col_exclusion : 0 
+  unique_in_square : 2 
+  twins_square_exclusion : 0 
+-------------------------------
+| 7  9  8 | 6  3  5 | 4  2  1 |
+| 1  2  6 | 9  7  4 | 5  8  3 |
+| 4  5  3 | 2  1  8 | 6  7  9 |
+-------------------------------
+| 9  7  2 | 5  8  6 | 3  1  4 |
+| 5  6  4 | 1  2  3 | 8  9  7 |
+| 3  8  1 | 4  9  7 | 2  5  6 |
+-------------------------------
+| 6  1  7 | 3  5  2 | 9  4  8 |
+| 8  3  5 | 7  4  9 | 1  6  2 |
+| 2  4  9 | 8  6  1 | 7  3  5 |
+-------------------------------
+
+Done with puzzle 17 in 1.36014914513 sec
+Starting puzzle 18
+-------------------------------
+Solved Puzzle: 
+  6445 - Constraint Cycles
+  14 - Branches
+
+  twins_row_exclusion : 1 
+  row_squeezes : 0 
+  unique_in_row : 53 
+  col_squeezes : 0 
+  single_possiblities : 81 
+  xwing_row : 0 
+  unique_in_col : 22 
+  twins_col_exclusion : 0 
+  unique_in_square : 5 
+  twins_square_exclusion : 0 
+-------------------------------
+| 5  9  4 | 8  7  6 | 1  2  3 |
+| 8  2  3 | 9  1  4 | 7  5  6 |
+| 6  1  7 | 2  3  5 | 8  9  4 |
+-------------------------------
+| 9  6  5 | 4  2  1 | 3  7  8 |
+| 7  8  1 | 6  5  3 | 9  4  2 |
+| 3  4  2 | 7  9  8 | 5  6  1 |
+-------------------------------
+| 1  5  9 | 3  4  2 | 6  8  7 |
+| 4  3  6 | 5  8  7 | 2  1  9 |
+| 2  7  8 | 1  6  9 | 4  3  5 |
+-------------------------------
+
+Done with puzzle 18 in 4.79548501968 sec
+Thu Oct 28 21:05:26 2010    sudoku.v4
+
+         11538456 function calls (11403687 primitive calls) in 83.013 CPU seconds
+
+   Ordered by: internal time
+   List reduced from 80 to 10 due to restriction <10>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    11190   14.987    0.001   33.884    0.003 sudoku.py:279(xwing_row_constraint)
+  2093616   14.061    0.000   30.193    0.000 sudoku.py:46(__call__)
+  2093616    6.496    0.000    6.496    0.000 {method 'has_key' of 'dict' objects}
+  1907917    5.099    0.000    5.099    0.000 {method 'append' of 'list' objects}
+    40356    4.101    0.000    8.703    0.000 sudoku.py:431(index_constraints)
+    28509    3.602    0.000   15.716    0.001 sudoku.py:359(value_not_placeable_in_row)
+  394/263    3.562    0.009   80.093    0.305 sudoku.py:211(constrain)
+   906390    3.357    0.000    3.357    0.000 sudoku.py:52(__init__)
+  1089612    2.876    0.000    2.876    0.000 {method 'add' of 'set' objects}
+   881940    2.660    0.000    2.660    0.000 sudoku.py:203(square_solved)
