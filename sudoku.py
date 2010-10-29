@@ -124,7 +124,7 @@ class Stats (object):
         for k,v in kws.items():
             setattr(self, k, v)
     def inc(self,k,v=1):
-        return setattr(self, k, getattr(self,k)+v)
+        return setattr(self, k, getattr(self,k,0)+v)
         
 
 class Index (object):
@@ -143,12 +143,7 @@ class Sudoku (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None,
                  stats=None):
-        self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0, 
-                                    # col_squeezes=0, row_squeezes=0,
-                                    single_possiblities=0, unique_in_row=0,
-                                    unique_in_col=0,unique_in_square=0,
-                                    naked_sets_col=0, naked_sets_row=0,
-                                    naked_sets_square=0, xwing_row=0, xwing_col=0)
+        self.stats = stats or Stats(puzzle_branches=1, constraint_steps=0)
         self.puzzle = puzzle
         self.parent = parent
         self.depth = depth
@@ -225,8 +220,8 @@ class Sudoku (object):
             self.xwing_row_constraint,
 
             # These seem to be not constraing over the others
-            # self.squeeze_col,
-            # self.squeeze_row,
+            self.squeeze_col,
+            self.squeeze_row,
             ]
         for cons in constraints:
             innerNew = True
@@ -239,7 +234,7 @@ class Sudoku (object):
                         continue
                     p = self.index_possibilites(i, j)
                     # special case
-                    if len(p)==1: self.single_possibility_constraint(p, i, j)
+                    if len(p)==1: self.stats.inc('single_possibility')
                     elif len(p)>1: p = cons(p, i, j)
                     if len(p)==1:
                         self.set_puzzle_val(i, j, p.pop())
@@ -278,10 +273,6 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def single_possibility_constraint(self, pos, row, col):
-        if len(pos)==1: self.stats.single_possiblities+=1
-        return pos
-
     def xwing_row_constraint(self, pos, row, col):
         posCounts = [[PosCount() for i in range(0,9)]
                      for i in range(0,9)]
@@ -313,7 +304,7 @@ class Sudoku (object):
                     #print c2, self.index_possibilites(*c2)
                     #print c3, self.index_possibilites(*c3)
                     #print c4, self.index_possibilites(*c4)
-                    self.stats.xwing_row+=1
+                    self.stats.inc('xwing_row')
                     return pos
         return pos
 
@@ -343,7 +334,7 @@ class Sudoku (object):
                 # we have an xwing square
                 pos = pos - set([val])
                 if len(pos) == 1 : 
-                    self.stats.xwing_col+=1
+                    self.stats.inc('xwing_col')
                     return pos
         return pos
 
@@ -358,7 +349,7 @@ class Sudoku (object):
             for v in pos:
                 if self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1]):
                     #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.stats.col_squeezes+=1
+                    self.stats.inc('squeeze_col')
                     return set([v])
         return pos
 
@@ -369,7 +360,7 @@ class Sudoku (object):
             for v in pos:
                 if self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1]):
                     #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.stats.row_squeezes+=1
+                    self.stats.inc('squeeze_row')
                     return set([v])
         return pos
 
