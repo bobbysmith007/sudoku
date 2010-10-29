@@ -81,7 +81,7 @@ def square_idxs(i):
 def square(row, col):
     return cross(square_idxs(row), square_idxs(col))
 
-PUZZLE = None
+PUZZLE = read_puzzle(puzzles.puzzles[0])
 
 def solve_puzzle(s):
     global PUZZLE
@@ -202,8 +202,11 @@ class Sudoku (object):
     def square_solved(self,row, col):
         return self.puzzle[row][col]
 
-    def set_puzzle_val(self, row, col, v):
+    def clear_puzzle_possibility_cache(self):
         self.ip.memo={} #reset IP memoization
+
+    def set_puzzle_val(self, row, col, v):
+        self.clear_puzzle_possibility_cache()
         self.puzzle[row][col] = v
         self.unsolved_idxs.remove([row,col])
     
@@ -223,10 +226,8 @@ class Sudoku (object):
             self.squeeze_col,
             self.squeeze_row,
             ]
-        for cons in constraints:
-            innerNew = True
-            while(innerNew):
-                innerNew=False
+        def fn():
+            for cons in constraints:
                 for i,j in self.unsolved_idxs:
                     self.stats.constraint_steps+=1
                     if self.square_solved(i,j): 
@@ -236,13 +237,12 @@ class Sudoku (object):
                     # special case
                     if len(p)==1: self.stats.inc('single_possibility')
                     elif len(p)>1: p = cons(p, i, j)
-                    if len(p)==1:
-                        self.set_puzzle_val(i, j, p.pop())
-                        new_constraint=True
-                        innerNew = True
+                    # start over reconstraining
+                    if len(p)==1: 
+                        self.set_puzzle_val(i,j,p.pop())
+                        return True
                     elif len(p)==0: raise NoPossibleValues(i,j)
-
-        if new_constraint: self.constrain()
+        while(fn()): pass
         
     def free_in_row(self, row):
         return [[row,j] for j in PIDXS if not self.square_solved(row, j)]
@@ -338,7 +338,6 @@ class Sudoku (object):
                     return pos
         return pos
 
-
     def squeeze_col(self, pos, row, col):
         """ constrain possibilities by squeezing
         http://www.chessandpoker.com/sudoku-strategy-guide.html
@@ -394,6 +393,10 @@ class Sudoku (object):
         cells = self.free_in_col(col)
         cells.remove([row,col])
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
+
+    def hidden_set_possibility_reduction(self):
+        for i,j in self.unsolved_idxs:
+            pass
 
     def _naked_sets_helper(self, free_list ,pos, name):
         kfn = lambda x:self.index_possibilites(*x)
