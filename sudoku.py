@@ -11,7 +11,7 @@ PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
 
 def cross(l1, l2):
-    return [[i,j] for i in l1 for j in l2]
+    return [Index(i,j) for i in l1 for j in l2]
 
 def cross_permute_indexes(l):
     """
@@ -30,7 +30,7 @@ def cross_permute_indexes(l):
             res.append([x,y])
     return res
 
-puzzle_range = cross(PIDXS,PIDXS)
+puzzle_range = set(cross(PIDXS,PIDXS))
 
 def tryint(v):
     try: return int(v)
@@ -138,6 +138,9 @@ class Index (object):
         return "<%s,%s>"%(self.row, self.col)
     def __hash__(self):
         return self.row*100+self.col
+    def __iter__(self):
+        yield self.row
+        yield self.col
 
 class Sudoku (object):
     def __init__(self, puzzle, parent=None, depth=1,
@@ -165,9 +168,9 @@ class Sudoku (object):
         return c
 
     def open_boxes(self):
-        return sorted([Box(i,j,self.index_possibilites(i,j))
-                       for i,j in puzzle_range
-                       if not self.square_solved(i,j)],
+        return sorted([Box(i,j,self.index_possibilites(idx))
+                       for idx in puzzle_range
+                       if not self.square_solved(idx)],
                       key=len)
 
     def search(self):
@@ -208,7 +211,7 @@ class Sudoku (object):
     def set_puzzle_val(self, row, col, v):
         self.clear_puzzle_possibility_cache()
         self.puzzle[row][col] = v
-        self.unsolved_idxs.remove([row,col])
+        self.unsolved_idxs.remove(Index(row,col))
     
     def constrain(self):
         new_constraint = False
@@ -231,42 +234,48 @@ class Sudoku (object):
             for cons in constraints:
                 # TODO: if we successfully constrain a square furthur, but dont find anything 
                 # we should restart
-                for i,j in self.unsolved_idxs:
+                for idx in list(self.unsolved_idxs):
                     self.stats.constraint_steps+=1
-                    if self.square_solved(i,j): 
-                        self.unsolved_idxs.remove([i,j])
+                    if self.square_solved(idx): 
+                        self.unsolved_idxs.remove(idx)
                         continue
-                    p = self.index_possibilites(i, j)
+                    p = self.index_possibilites(idx)
                     # special case
                     if len(p)==1: self.stats.inc('single_possibility')
-                    elif len(p)>1: p = cons(p, i, j)
+                    elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
                     if len(p)==1: 
-                        self.set_puzzle_val(i,j,p.pop())
+                        self.set_puzzle_val(idx,p.pop())
                         return True
-                    elif len(p)==0: raise NoPossibleValues(i,j)
+                    elif len(p)==0: raise NoPossibleValues(idx)
             return self._constrained_this_cycle
         while(fn()): pass
         
     def free_in_row(self, row):
-        return [[row,j] for j in PIDXS if not self.square_solved(row, j)]
+        return set([idx 
+                    for j in PIDXS
+                    for idx in [Index(row,j)]
+                    if not self.square_solved(idx)])
 
     def free_in_col(self, col):
-        return [[i,col] for i in PIDXS if not self.square_solved(i, col)]
+        return set([idx
+                    for i in PIDXS
+                    for idx in [Index(i,col)]
+                    if not self.square_solved(idx)])
 
-    def free_in_square(self, row, col):
-        return [[i,j] for i,j in square(row,col) if not self.square_solved(i, j)]
+    def free_in_square(self, idx_in):
+        return set([idx for idx in square(idx_in) if not self.square_solved(idx)])
 
-    def free_square_row(self, row, col):
-        return [i for i in square_idxs(row) if not self.square_solved(i, col)]
+    def free_square_row(self, idx):
+        return [i for i in square_idxs(idx.row) if not self.square_solved(Index(i, idx.col))]
 
-    def free_related_cells(self, row, col):
-        return self.free_in_row(row)+self.free_in_col(col)+self.free_in_square(row, col)
+    def free_related_cells(self, idx):
+        return self.free_in_row(idx.row)+self.free_in_col(idx.col)+self.free_in_square(idx)
 
-    def free_related_possibilities(self, row, col):
-        return [self.index_possibilites(i,j)
-                for i,j in self.free_related_cells(row,col)
-                if not (i==row and j==col)]
+    def free_related_possibilities(self, idx):
+        return [self.index_possibilites(i)
+                for i in self.free_related_cells(idx)
+                if not (i.row==idx.row and i.col==idx.col)]
 
     def free_square_col(self, row, col):
         return [j for j in square_idxs(col) if not self.square_solved(row, j)]
@@ -390,7 +399,7 @@ class Sudoku (object):
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
         cells = self.free_in_square(row, col)
-        cells.remove([row,col])
+        cells.remove(Index(row,col))
         return self._unique_possibility_helper( cells, pos, 'unique_in_square')
 
     def unique_possibility_in_row(self,pos,row,col):
@@ -398,12 +407,12 @@ class Sudoku (object):
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
         cells = self.free_in_row(row)
-        cells.remove([row,col])
+        cells.remove(Index(row,col))
         return self._unique_possibility_helper(cells, pos, 'unique_in_row')
 
     def unique_possibility_in_col(self,pos,row,col):
         cells = self.free_in_col(col)
-        cells.remove([row,col])
+        cells.remove(Index(row,col))
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
     def hidden_set_possibility_reduction(self):
@@ -451,10 +460,9 @@ class Sudoku (object):
                     return p
         return pos
         
-    def naked_sets_exclusion_in_col(self,pos,row,col):
-        me = [row,col]
+    def naked_sets_exclusion_in_col(self,pos,idx):
         fic = self.free_in_col(col)
-        fic.remove(me)
+        fic.remove(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_col')
 
     def naked_sets_exclusion_in_row(self,pos,row,col):
