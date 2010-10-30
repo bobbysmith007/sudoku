@@ -536,14 +536,18 @@ def solve_puzzle(s):
 
 def solve_some_puzzles():
     i = 1
+    total_time = 0
     for p in puzzles2.puzzles:
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()
         s = solve_puzzle(p)
         print s
-        print "Done with puzzle %s in %s sec" % (i, time.time()-p.start)
+        ptime = time.time()-p.start
+        total_time += ptime
+        print "Done with puzzle %s in %s sec" % (i, ptime)
         i+=1
+    print "Done with %d puzzles in %s sec" % (len(puzzles2.puzzles), total_time)
 
      
 if __name__ == "__main__":
