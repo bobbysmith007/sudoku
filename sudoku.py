@@ -123,6 +123,8 @@ class Sudoku (object):
                 print "ERROR ON BOARD:\n",self
                 raise e
         if self.is_solved(): return self
+
+        logging.warning("Couldn't solve board via constraints, %s\nStarting to guess",self)
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
         # otherwise any mistake is enough to backtrack
@@ -137,11 +139,12 @@ class Sudoku (object):
     def solve(self):
         sol = self.search()
         if sol and sol.is_solved():
-            self.puzzle = deepcopy(sol.puzzle)
-            self.status()
+            #self.puzzle = deepcopy(sol.puzzle)
+            sol.status()
         else:
             print self
             raise Exception("Puzzle Not Solved...")
+        return sol
             
     def square_solved(self,idx):
         return self.puzzle[idx.row][idx.col]
@@ -526,10 +529,10 @@ def solve_puzzle(s):
     global PUZZLE
     if isinstance(s,str):
         s = read_puzzle(s)
-    s.solve()
-    assert s.is_solved()
-    PUZZLE = s
-    return s
+    p = s.solve()
+    assert p.is_solved()
+    PUZZLE = p
+    return p
 
 def solve_some_puzzles():
     i = 1
