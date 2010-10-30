@@ -93,8 +93,8 @@ class Sudoku (object):
         self.depth = depth
         self.unsolved_idxs = unsolved_idxs or deepcopy(puzzle_range)
         self.start = start or time.time()
-        self.ip = Memoize(Sudoku.index_possibilites)
-        self.index_possibilites = types.MethodType(self.ip, self, Sudoku)
+        self.ip = Memoize(Sudoku.index_possibilities)
+        self.index_possibilities = types.MethodType(self.ip, self, Sudoku)
     
     def make_child(self, box=None, new_val=None):
         self.stats.puzzle_branches+=1
@@ -109,7 +109,7 @@ class Sudoku (object):
         return c
 
     def open_boxes(self):
-        return sorted([Box(idx,self.index_possibilites(idx))
+        return sorted([Box(idx,self.index_possibilities(idx))
                        for idx in puzzle_range
                        if not self.square_solved(idx)],
                       key=len)
@@ -179,7 +179,7 @@ class Sudoku (object):
                     if self.square_solved(idx): 
                         self.unsolved_idxs.remove(idx)
                         continue
-                    p = self.index_possibilites(idx)
+                    p = self.index_possibilities(idx)
                     if len(p)==1: self.stats.inc('single_possibility')
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
@@ -211,7 +211,7 @@ class Sudoku (object):
         return self.free_in_row(idx.row)+self.free_in_col(idx.col)+self.free_in_square(idx)
 
     def free_related_possibilities(self, idx):
-        return [self.index_possibilites(i)
+        return [self.index_possibilities(i)
                 for i in self.free_related_cells(idx)
                 if i!=idx]
 
@@ -235,7 +235,7 @@ class Sudoku (object):
         posCounts = [[PosCount() for i in range(0,9)]
                      for i in range(0,9)]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilites(i):
+            for val in self.index_possibilities(i):
                 posCounts[i.row][val-1].cnt+=1
                 posCounts[i.row][val-1].idxs.append(i)
         p = deepcopy(pos)
@@ -258,10 +258,10 @@ class Sudoku (object):
                 pos = pos - set([val])
                 if len(pos) == 1 :
                     #print "XWING : <%s,%s> to %s\n" % (row,col,pos)
-                    #print c1, self.index_possibilites(*c1)
-                    #print c2, self.index_possibilites(*c2)
-                    #print c3, self.index_possibilites(*c3)
-                    #print c4, self.index_possibilites(*c4)
+                    #print c1, self.index_possibilities(*c1)
+                    #print c2, self.index_possibilities(*c2)
+                    #print c3, self.index_possibilities(*c3)
+                    #print c4, self.index_possibilities(*c4)
                     self.stats.inc('xwing_row')
                     return pos
         return pos
@@ -270,7 +270,7 @@ class Sudoku (object):
         posCounts = [[PosCount() for i in range(0,9)]
                      for i in range(0,9)]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilites(idx):
+            for val in self.index_possibilities(idx):
                 posCounts[i.col][val-1].cnt+=1
                 posCounts[i.col][val-1].idxs.append(i)
         p = deepcopy(pos)
@@ -324,8 +324,8 @@ class Sudoku (object):
     def _unique_possibility_helper(self, cells, pos, name):
         for v in pos:
             not_allowed_elsewhere = \
-                all([not v in self.index_possibilites(i)
-                     for i in cells])
+                all(not v in self.index_possibilities(i)
+                     for i in cells)
             if not_allowed_elsewhere:
                 self.stats.inc(name)
                 return set([v])
@@ -352,11 +352,11 @@ class Sudoku (object):
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
-    def _naked_sets_helper(self, free_list ,pos, name):
-        free_list.sort(key=self.index_possibilites)
+    def _naked_sets_helper(self, free_list, pos, name):
+        free_list.sort(key=self.index_possibilities)
         # naked sets
         groups = [(i,gl) 
-                  for i,g in itertools.groupby(free_list, self.index_possibilites)
+                  for i,g in itertools.groupby(free_list, self.index_possibilities)
                   for gl in [list(g)]]
         kfn = lambda x: len(x[0])
         groups.sort(key=kfn)
@@ -374,7 +374,7 @@ class Sudoku (object):
             for i1,gl1 in not_naked:
                 for i2, gl2 in not_naked[ahead:]:
                     if i1 <= i2: #subset
-                        # the intersection of the possibilites is the length of the indexes
+                        # the intersection of the possibilities is the length of the indexes
                         if len(gl1)+len(gl2) == len(i2):
                             not_naked.remove((i1,gl1))
                             not_naked.remove((i2,gl2))
@@ -392,7 +392,7 @@ class Sudoku (object):
         # handle hidden sets -- never triggering currently
         for i, gl in not_naked:
             if len(gl) <= 2: continue # cant be hidden
-            p = [self.index_possibilites(x) for x in gl]
+            p = [self.index_possibilities(x) for x in gl]
             p.sort(key=len)
             maxp = p[-1] # longest pos list
             shared = p[1] # shortest pos list
@@ -402,7 +402,7 @@ class Sudoku (object):
                 self.stats.append('hidden_set_constraint')
                 self.naked_groups.add((shared,gl))
                 self.not_naked.remove((i,gl))
-                for p in [self.index_possibilites(x)
+                for p in [self.index_possibilities(x)
                           for x in gl]:
                     for v in list(p):
                         if v not in shared:
@@ -414,7 +414,7 @@ class Sudoku (object):
         for not_pos,gl in naked_groups:
             for cell in free_list:
                 if not cell in gl:
-                    to_tell = self.index_possibilites(cell)
+                    to_tell = self.index_possibilities(cell)
                     for i in not_pos: 
                         if i in to_tell: 
                             self._constrained_this_cycle=True
@@ -422,7 +422,7 @@ class Sudoku (object):
                             to_tell.remove(i)
 
         # if I want to resolve the current square based on this I should uncomment,
-        # but i want it to work just by removing possibilites now
+        # but i want it to work just by removing possibilities now
 #        if len(groups)>0:
 #            # print "NAKED COL SET", groups
 #            for not_pos, idxs in groups:
@@ -455,7 +455,7 @@ class Sudoku (object):
         knowns.remove(None) # avoids many ifs
         return knowns
 
-    def index_possibilites(self,idx):
+    def index_possibilities(self,idx):
         v = self.square_solved(idx)
         if v: return set([v])
         pos = PVALS - self.index_constraints(idx)
