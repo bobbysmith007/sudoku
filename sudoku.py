@@ -41,18 +41,6 @@ def tryint(v):
     try: return int(v)
     except: return None
 
-class Memoize(object):
-    """Memoize(fn) - an instance which acts like fn but memoizes its arguments
-       Will only work on functions with non-mutable arguments
-    """
-    def __init__(self, fn):
-        self.fn = fn
-        self.memo = {}
-    def __call__(self, *args):
-        if not self.memo.has_key(args):
-            self.memo[args] = self.fn(*args)
-        return self.memo[args]
-
 class PosCount(object):
     def __init__(self, val=None, idxs=None):
         self.val,self.idxs=val,idxs or []
@@ -109,9 +97,8 @@ class Sudoku (object):
         self.depth = depth
         self.unsolved_idxs = unsolved_idxs or deepcopy(puzzle_range)
         self.start = start or time.time()
-        self.ip = Memoize(Sudoku.index_possibilities)
-        self.index_possibilities = types.MethodType(self.ip, self, Sudoku)
-    
+        self.possibility_hash={}
+        
     def make_child(self, box=None, new_val=None):
         self.stats.puzzle_branches+=1
         idx = self.stats.puzzle_branches
@@ -166,12 +153,12 @@ class Sudoku (object):
         return self.puzzle[idx.row][idx.col]
 
     def clear_puzzle_possibility_cache(self):
-        self.ip.memo={} #reset IP memoization
+        self.possibility_hash={} #reset IP memoization
 
     def set_puzzle_val(self, idx, v):
         #self.clear_puzzle_possibility_cache()
         self.puzzle[idx.row][idx.col] = v
-        self.ip.memo[idx] = set([v])
+        self.set_index_possibilities(idx, set([v]))
         self.unsolved_idxs.remove(idx)
     
     def constrain(self):
@@ -598,12 +585,18 @@ class Sudoku (object):
         for i,j in square(idx): knowns.add( self.puzzle[i][j] )
         knowns.remove(None) # avoids many ifs
         return knowns
-
+    
+    def set_index_possibilities(self,idx,pos):
+        self.possibility_hash[idx] = pos
+        return pos
+        
     def index_possibilities(self,idx):
+        if self.possibility_hash.has_key(idx):
+            return self.possibility_hash[idx]
         v = self.square_solved(idx)
         if v: return set([v])
         pos = PVALS - self.index_constraints(idx)
-        return pos        
+        return self.set_index_possibilities(idx, pos)
 
     def is_solved(self):
         for i in puzzle_range: 
