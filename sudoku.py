@@ -169,7 +169,7 @@ class Sudoku (object):
         self.ip.memo={} #reset IP memoization
 
     def set_puzzle_val(self, idx, v):
-        self.clear_puzzle_possibility_cache()
+        #self.clear_puzzle_possibility_cache()
         self.puzzle[idx.row][idx.col] = v
         self.unsolved_idxs.remove(idx)
     
@@ -212,12 +212,18 @@ class Sudoku (object):
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
                     if len(p)==1:
+                        value = p.pop()
                         idx_pos = self.index_possibilities(idx)
                         to_rem = idx_pos-p
                         for v in to_rem:
                             idx_pos.remove(v)
-                        self.set_puzzle_val(idx,p.pop())
-                        return True
+                        for i in self.free_related_cells(idx):
+                            if i == idx: continue
+                            idx_pos = self.index_possibilities(i)
+                            if value in idx_pos:
+                                idx_pos.remove(value)
+                        self.set_puzzle_val(idx,value)
+                        self._constrained_this_cycle = True
                     elif len(p)==0: raise NoPossibleValues(idx)
             return self._constrained_this_cycle
         while(fn()): pass
@@ -526,29 +532,7 @@ class Sudoku (object):
                             not_naked.append((i2,gl1+gl2))
                             return True
                 ahead +=1
-        while(fn()):pass
-
-        looking_for = [Index(2,5),Index(2,8)]
-        for vals, idxs in not_naked:
-            if len(vals)>len(idxs) and len(idxs)==2:# and idxs == looking_for:
-                x = set.intersection(*map(self.index_possibilities,idxs))
-                others = set(free_list)-set(idxs)
-                if len(others)==0: continue
-                y = set.union(*map(self.index_possibilities, others))
-                if x.isdisjoint(y):
-                    print "Not",vals,\
-                        [(idx, self.index_possibilities(idx))for idx in idxs]\
-                        ,"\n ",x,y,x.isdisjoint(y)
-                    to_rem = vals-x
-                    self.stats.inc('nuded_a_set')
-                    for idx in idxs:
-                        p = self.index_possibilities(idx)
-                        for v in to_rem:
-                            if v in p:
-                                p.remove(v)
-                    naked_groups.append((x,idxs))
-                    not_naked.remove((vals, idxs))
-                        
+        while(fn()):pass                        
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -676,7 +660,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles2.puzzles[0:1]
+    puz = puzzles.puzzles
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
