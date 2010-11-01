@@ -513,14 +513,15 @@ class Sudoku (object):
         while(fn()):pass
         
         for vals, idxs in not_naked:
+            if not len(vals)>len(idxs): continue
+            others = set(free_list)-set(idxs)
+            if len(others)==0: continue
             #smallest subset of hidden
-            if len(vals)==1+len(idxs) and len(idxs)==2:
-                x = set.intersection(*map(self.index_possibilities,idxs))
-                others = set(free_list)-set(idxs)
-                if len(others)==0: continue
-                y = set.union(*map(self.index_possibilities, others))
-                if len(x) == len(idxs) and x.isdisjoint(y) and\
-                        len(vals-(x|y))==0 :
+            x = set.intersection(*map(self.index_possibilities,idxs))
+            y = set.union(*map(self.index_possibilities, others))
+            if not x.isdisjoint(y) or len(vals-(x|y)) != 0:continue
+            if len(idxs)==2:
+                if len(x) == len(idxs) :
                     #print "Not",vals,\
                     #    [(idx, self.index_possibilities(idx))for idx in idxs]\
                     #    ,"\n ",x,y,x.isdisjoint(y),free_list
