@@ -9,6 +9,14 @@ logging.basicConfig(level=logging.info)
 
 PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
+
+def every_combo(inp):
+    res = []
+    for i in range(2,len(inp)):
+        res.extend(itertools.combinations(inp,i))
+    res.append(tuple(inp))
+    return res
+
 class Index (object):
     def __init__(self,row,col):
         self.row,self.col = row,col
@@ -167,11 +175,9 @@ class Sudoku (object):
     
     def constrain(self):
         new_constraint = False
-        constraints = [
-            #self.hidden_set_exclusion_in_col,
-            #self.hidden_set_exclusion_in_row,
-            #self.hidden_set_exclusion_in_square,
 
+        constraints = [
+            
             self.naked_sets_exclusion_in_col,
             self.naked_sets_exclusion_in_square,
             self.naked_sets_exclusion_in_row,
@@ -180,7 +186,13 @@ class Sudoku (object):
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
 
-            self.xwing_col_constraint, self.xwing_row_constraint,
+            # self.hidden_set_exclusion_in_col,
+            # self.hidden_set_exclusion_in_row,
+            # self.hidden_set_exclusion_in_square,
+
+
+            self.xwing_col_constraint, 
+            self.xwing_row_constraint,
 
             # These seem to be not constraing over the others
             self.squeeze_col, self.squeeze_row,
@@ -399,63 +411,83 @@ class Sudoku (object):
         # look for hidden sets by looking at every combination
         # of values, and finding ones that share a common set 
         # of indexs exclusively
-        def fn(): 
-            for i in range(2,len(pcnts.it)):
-                cmbs = itertools.combinations(pcnts.it,i)
-                for cmb in cmbs:
-                    idxs = set.union(*map(set,cmb))
-                    vals = set(pcnt.val for pcnt in cmb)
+        def fn():
+            cmbs = every_combo(pcnts.it)
+            for cmb in cmbs:
+                idxs = set.union(*map(set,cmb))
+                vals = set(pcnt.val for pcnt in cmb)
+                if len(idxs) != len(vals): continue
+                idx_pos = [self.index_possibilities(idx)
+                           for idx in idxs]
+                val_len = len(vals)
+                
+                set_is_related = False
+                idx_intersect = set.intersection(*idx_pos)
+                int_len = len(idx_intersect)
+                if len(cmb)==2:
+                    set_is_related = idx_intersect == vals and \
+                        any(len(p)>2 for p in idx_pos)
 
-                    # sets are related if each cell contains 
-                    # two values that could be in one or more other cell 
-                    # in the set
-                    set_is_related = \
-                        all(len(self.index_possibilities(idx)&vals)>=2
-                            for idx in idxs)
-                        
-                    if len(idxs) == len(vals) and set_is_related:
-                        hidden_sets.append((vals,idxs))
-                        pcnts.it = [pcnt for pcnt in pcnts.it
-                                    if pcnt.val not in vals]
-                        return True
-        while(fn()): pass
+                if len(cmb)==3:
+                    set_is_related = False
+                        #any(len(idx_intersect) == len(vals & p)
+                        #    for p in idx_pos) and \
+                        #all(len(vals & p) >=2
+                        #    for p in idx_pos)
+                         
+                if len(cmb)==4:
+                    pass
+                if len(cmb)==5:
+                    pass
+                if len(cmb)==6:
+                    pass
+                
+                if set_is_related:
+                    hidden_sets.append((vals,idxs))
+                    pcnts.it = [pcnt for pcnt in pcnts.it
+                                if pcnt.val not in vals]
+                    return True
+        while( len(pcnts.it) > 1 and fn()): pass
         
         for vals,idxs in hidden_sets:
-            #print vals, " in ", map(self.index_possibilities,idxs), "\n    for", idxs
-            
-            # sanity check
-            others = set(free_list) - set(idxs)
-            for idx in others:
-                p = self.index_possibilities(idx)
-                if any(v in p for v in vals):
-                    raise Exception("Broken hidden set %s found in %s for idx %s which wasnt in %s" % \
-                                        (v, p, idx, idxs))
+            print vals, " in ",[(self.index_possibilities(idx),idx, idx in idxs)
+                                for idx in free_list]
+            other_pos = [self.index_possibilities(idx)
+                         for idx in (set(free_list) - set(idxs))]
+            # sanity check, none of our values should be placeable elsewhere
+            if any(any(v in p for p in other_pos)
+                   for v in vals):
+                raise Exception("Broken hidden set %s found in %s for idx ? which wasnt in %s" % \
+                                    (v, p, idxs))
 
             # constrain the related indexes in the set
-            for idx in idxs: 
+            self.stats.inc(name)
+            for idx in idxs:
                 p = self.index_possibilities(idx)
                 to_rem = p-vals
-                # print "  rem:",to_rem, " from ", p," for  idx", idx
+                #print "  rem:",to_rem, " from ", p," for  idx", idx
                 for v in to_rem:
-                    p.remove(v)
+                    # sanity check none of the values we are removing can only be here
+                    if all(v not in p for p in other_pos):
+                        raise Exception("Removing a val that can be no where else:%s-%s"% (v, other_pos))
                     self._constrained_this_cycle=True
-                    self.stats.inc(name)
-                # print "    p:",self.index_possibilities(idx)
+                    p.remove(v)    
+                #print "    p:",self.index_possibilities(idx)
         return pos
 
     def hidden_set_exclusion_in_col(self,pos,idx):
         fic = self.free_in_col(idx.col)
-        fic.remove(idx)
+        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_col_constraint')
 
     def hidden_set_exclusion_in_row(self,pos,idx):
         fic = self.free_in_row(idx.row)
-        fic.remove(idx)
+        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_row_constraint')
 
     def hidden_set_exclusion_in_square(self,pos,idx):
         fic = self.free_in_square(idx)
-        fic.remove(idx)
+        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_square_constraint')
 
     def _naked_sets_helper(self, free_list, pos, name):
@@ -495,6 +527,28 @@ class Sudoku (object):
                             return True
                 ahead +=1
         while(fn()):pass
+
+        looking_for = [Index(2,5),Index(2,8)]
+        for vals, idxs in not_naked:
+            if len(vals)>len(idxs) and len(idxs)==2:# and idxs == looking_for:
+                x = set.intersection(*map(self.index_possibilities,idxs))
+                others = set(free_list)-set(idxs)
+                if len(others)==0: continue
+                y = set.union(*map(self.index_possibilities, others))
+                if x.isdisjoint(y):
+                    print "Not",vals,\
+                        [(idx, self.index_possibilities(idx))for idx in idxs]\
+                        ,"\n ",x,y,x.isdisjoint(y)
+                    to_rem = vals-x
+                    self.stats.inc('nuded_a_set')
+                    for idx in idxs:
+                        p = self.index_possibilities(idx)
+                        for v in to_rem:
+                            if v in p:
+                                p.remove(v)
+                    naked_groups.append((x,idxs))
+                    not_naked.remove((vals, idxs))
+                        
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -622,7 +676,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles2.puzzles
+    puz = puzzles2.puzzles[0:1]
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
