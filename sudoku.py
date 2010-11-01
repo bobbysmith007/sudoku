@@ -200,17 +200,11 @@ class Sudoku (object):
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
                     if len(p)==1:
-                        idx_pos = self.index_possibilities(idx)
-                        to_rem = idx_pos-p
-                        value = p.pop()
-                        for v in to_rem:
-                            idx_pos.remove(v)
+                        self.set_index_possibilities(idx, p)
                         for i in self.free_related_cells(idx):
-                            if i == idx: continue
-                            idx_pos = self.index_possibilities(i)
-                            if value in idx_pos:
-                                idx_pos.remove(value)
-                        self.set_puzzle_val(idx,value)
+                            if i == idx: continue                            
+                            self.remove_index_possibilities(i, p)
+                        self.set_puzzle_val(idx,list(p)[0])
                         self._constrained_this_cycle = True
                     elif len(p)==0: raise NoPossibleValues(idx)
             return self._constrained_this_cycle
@@ -457,16 +451,15 @@ class Sudoku (object):
             # constrain the related indexes in the set
             self.stats.inc(name)
             for idx in idxs:
-                p = self.index_possibilities(idx)
-                to_rem = p-vals
-                #print "  rem:",to_rem, " from ", p," for  idx", idx
-                for v in to_rem:
-                    # sanity check none of the values we are removing can only be here
-                    if all(v not in p for p in other_pos):
-                        raise Exception("Removing a val that can be no where else:%s-%s"% (v, other_pos))
-                    self._constrained_this_cycle=True
-                    p.remove(v)    
-                #print "    p:",self.index_possibilities(idx)
+                # sanity check none of the values we are removing can
+                # only be here
+                if all(v not in p 
+                       for p in other_pos
+                       for v in self.index_possibilities(idx)-vals):
+                    raise Exception("Removing a val that can be no"
+                                    " where else:%s-%s"% (v, other_pos))
+                self.remove_index_possibilities(idx,vals)
+                self._constrained_this_cycle=True
         return pos
 
     def hidden_set_exclusion_in_col(self,pos,idx):
@@ -532,13 +525,9 @@ class Sudoku (object):
                     #    [(idx, self.index_possibilities(idx))for idx in idxs]\
                     #    ,"\n ",x,y,x.isdisjoint(y),free_list
                     #print self.print_help()
-                    to_rem = vals-x
                     self.stats.inc('nuded_a_set')
                     for idx in idxs:
-                        p = self.index_possibilities(idx)
-                        for v in to_rem:
-                            if v in p:
-                                p.remove(v)
+                        self.remove_index_possibilities(idx, vals-x)
                     naked_groups.append((x,idxs))
                     not_naked.remove((vals, idxs))
         
@@ -589,6 +578,12 @@ class Sudoku (object):
     def set_index_possibilities(self,idx,pos):
         self.possibility_hash[idx] = pos
         return pos
+
+    def remove_index_possibilities(self,idx,pos):
+        new_pos = self.index_possibilities(idx)-pos
+        if len(new_pos) == 0: 
+            raise NoPossibleValues(idx)
+        return self.set_index_possibilities(idx, new_pos)
         
     def index_possibilities(self,idx):
         if self.possibility_hash.has_key(idx):
