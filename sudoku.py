@@ -46,12 +46,16 @@ class Memoize(object):
         return self.memo[args]
 
 class PosCount(object):
-    def __init__(self, cnt=0, idxs=None):
-        self.cnt,self.idxs=cnt,idxs or []
+    def __init__(self, val=None, idxs=None):
+        self.val,self.idxs=val,idxs or []
+    def __len__ (self):
+        return len(self.idxs)
     def __repr__(self):
-        return "|%d|"%self.cnt
+        return "|%d|"%len(self)
     def __str__(self):
-        return "|%d|"%self.cnt
+        return "|%d|"%len(self)
+    def __iter__(self):
+        return iter(self.idxs)
 
 def square_idxs(i):
     r = i / 3
@@ -76,10 +80,14 @@ class Box (object):
     def __str__(self):
         return "Box(%s,%s)"%(self.idx,self.val)
 
-class Stats (object):
+class Ref (object):
     def __init__(self,**kws):
         for k,v in kws.items():
             setattr(self, k, v)
+
+class Stats (Ref):
+    def __init__(self,**kws):
+        Ref.__init__(self, **kws)
     def inc(self,k,v=1):
         return setattr(self, k, getattr(self,k,0)+v)
 
@@ -160,23 +168,28 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
         constraints = [
+            #self.hidden_set_exclusion_in_col,
+            #self.hidden_set_exclusion_in_row,
+            #self.hidden_set_exclusion_in_square,
+
             self.naked_sets_exclusion_in_col,
             self.naked_sets_exclusion_in_square,
             self.naked_sets_exclusion_in_row,
+
             self.unique_possibility_in_row,
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
-            self.xwing_col_constraint,
-            self.xwing_row_constraint,
+
+            self.xwing_col_constraint, self.xwing_row_constraint,
 
             # These seem to be not constraing over the others
-            self.squeeze_col,
-            self.squeeze_row,
+            self.squeeze_col, self.squeeze_row,
             ]
         def fn():
             self._constrained_this_cycle = False
             for cons in constraints:
-                # copy the set so we can remove the currently inspected index if nec
+                # copy the set so we can remove the currently
+                # inspected index if nec
                 for idx in list(self.unsolved_idxs):
                     self.stats.constraint_steps+=1
                     if self.square_solved(idx): 
@@ -186,7 +199,11 @@ class Sudoku (object):
                     if len(p)==1: self.stats.inc('single_possibility')
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
-                    if len(p)==1: 
+                    if len(p)==1:
+                        idx_pos = self.index_possibilities(idx)
+                        to_rem = idx_pos-p
+                        for v in to_rem:
+                            idx_pos.remove(v)
                         self.set_puzzle_val(idx,p.pop())
                         return True
                     elif len(p)==0: raise NoPossibleValues(idx)
@@ -235,28 +252,36 @@ class Sudoku (object):
             if self.puzzle[i][col] == val: return True
 
     def xwing_row_constraint(self, pos, idx):
-        posCounts = [[PosCount() for i in range(0,9)]
+        # buid a collection of row->possibility->number of times that
+        # possibility occurs
+        posCounts = [[PosCount(j+1) for j in range(0,9)]
                      for i in range(0,9)]
         for i in self.unsolved_idxs:
             for val in self.index_possibilities(i):
-                posCounts[i.row][val-1].cnt+=1
                 posCounts[i.row][val-1].idxs.append(i)
         p = deepcopy(pos)
 
+        #for all of the values in my square, check to see
+        # if an xwing removes counts
         for val in p:
             i1=None
             i2=None
             for i in PIDXS:
-                if i!=idx.row and posCounts[i][val-1].cnt==2: # 2 cells share this pos
+                # 2 cells share this possibility
+                if i!=idx.row and len(posCounts[i][val-1])==2: 
                     if i1: i2=i
                     else: i1=i
-            if i1 and i2:
+            if i1 and i2: 
+                # two rows contain two cells in the 
+                # same two columns with the same set of two possibilities 
                 c1,c2 = posCounts[i1][val-1].idxs
                 c3,c4 = posCounts[i2][val-1].idxs
                 if c1.col>c2.col: c1,c2 = c2,c1 
                 if c3.col>c4.col: c3,c4 = c4,c3
-                if c1.col!=c3.col or c2.col!=c4.col: continue # not an xwing square
-                if c1.col!=idx.col and c2.col!=idx.col: continue # not relevant to me
+                # not an xwing square, columns didnt match
+                if c1.col!=c3.col or c2.col!=c4.col: continue 
+                # not relevant to me
+                if c1.col!=idx.col and c2.col!=idx.col: continue 
                 # we have an xwing square
                 pos = pos - set([val])
                 if len(pos) == 1 :
@@ -270,11 +295,10 @@ class Sudoku (object):
         return pos
 
     def xwing_col_constraint(self, pos, idx):
-        posCounts = [[PosCount() for i in range(0,9)]
+        posCounts = [[PosCount(j+1) for j in range(0,9)]
                      for i in range(0,9)]
         for i in self.unsolved_idxs:
             for val in self.index_possibilities(idx):
-                posCounts[i.col][val-1].cnt+=1
                 posCounts[i.col][val-1].idxs.append(i)
         p = deepcopy(pos)
 
@@ -282,7 +306,7 @@ class Sudoku (object):
             j1=None
             j2=None
             for j in PIDXS:
-                if j!=idx.col and posCounts[j][val-1].cnt==2: # 2 cells share this pos
+                if j!=idx.col and len(posCounts[j][val-1])==2: # 2 cells share this pos
                     if j1: j2=j
                     else: j1=j
             if j1 and j2:
@@ -355,9 +379,88 @@ class Sudoku (object):
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
+    def _hidden_sets_helper(self, free_list, pos, name):
+        """ If a set of cells are the only cells that can hold a 
+        set of values of equal length, then those values must be 
+        in those squares. So remove all other possibilities from
+        those cells
+        """
+        # print "---\nStarting hidden set\n---"
+        # count the possibilities for each free square
+        pcnts = [PosCount(v) for v in PVALS]
+        for idx in free_list:
+            for v in self.index_possibilities(idx):
+                pcnts[v-1].idxs.append(idx)
+
+        # remove any values that are not possible and close this
+        pcnts = Ref(it=[i for i in pcnts if len(i)>0])
+        
+        hidden_sets = []
+        # look for hidden sets by looking at every combination
+        # of values, and finding ones that share a common set 
+        # of indexs exclusively
+        def fn(): 
+            for i in range(2,len(pcnts.it)):
+                cmbs = itertools.combinations(pcnts.it,i)
+                for cmb in cmbs:
+                    idxs = set.union(*map(set,cmb))
+                    vals = set(pcnt.val for pcnt in cmb)
+
+                    # sets are related if each cell contains 
+                    # two values that could be in one or more other cell 
+                    # in the set
+                    set_is_related = \
+                        all(len(self.index_possibilities(idx)&vals)>=2
+                            for idx in idxs)
+                        
+                    if len(idxs) == len(vals) and set_is_related:
+                        hidden_sets.append((vals,idxs))
+                        pcnts.it = [pcnt for pcnt in pcnts.it
+                                    if pcnt.val not in vals]
+                        return True
+        while(fn()): pass
+        
+        for vals,idxs in hidden_sets:
+            #print vals, " in ", map(self.index_possibilities,idxs), "\n    for", idxs
+            
+            # sanity check
+            others = set(free_list) - set(idxs)
+            for idx in others:
+                p = self.index_possibilities(idx)
+                if any(v in p for v in vals):
+                    raise Exception("Broken hidden set %s found in %s for idx %s which wasnt in %s" % \
+                                        (v, p, idx, idxs))
+
+            # constrain the related indexes in the set
+            for idx in idxs: 
+                p = self.index_possibilities(idx)
+                to_rem = p-vals
+                # print "  rem:",to_rem, " from ", p," for  idx", idx
+                for v in to_rem:
+                    p.remove(v)
+                    self._constrained_this_cycle=True
+                    self.stats.inc(name)
+                # print "    p:",self.index_possibilities(idx)
+        return pos
+
+    def hidden_set_exclusion_in_col(self,pos,idx):
+        fic = self.free_in_col(idx.col)
+        fic.remove(idx)
+        return self._hidden_sets_helper(fic,pos,'hidden_sets_col_constraint')
+
+    def hidden_set_exclusion_in_row(self,pos,idx):
+        fic = self.free_in_row(idx.row)
+        fic.remove(idx)
+        return self._hidden_sets_helper(fic,pos,'hidden_sets_row_constraint')
+
+    def hidden_set_exclusion_in_square(self,pos,idx):
+        fic = self.free_in_square(idx)
+        fic.remove(idx)
+        return self._hidden_sets_helper(fic,pos,'hidden_sets_square_constraint')
+
     def _naked_sets_helper(self, free_list, pos, name):
         free_list.sort(key=self.index_possibilities)
-        # naked sets
+        # group free squares by shared possiblity lists
         groups = [(i,gl) 
                   for i,g in itertools.groupby(free_list, self.index_possibilities)
                   for gl in [list(g)]]
@@ -371,13 +474,14 @@ class Sudoku (object):
             else:
                 not_naked.append((i1,gl1))
 
+        # this section handles the indistinct subset possibilites of multiplesquares
+        # ex: [set(1,2),set(2,3),set(1,2,3)] is a naked triple
         def fn():
             ahead = 1
             not_naked.sort(key=kfn)
             for i1,gl1 in not_naked:
                 for i2, gl2 in not_naked[ahead:]:
                     if i1 <= i2: #subset
-                        # the intersection of the possibilities is the length of the indexes
                         if len(gl1)+len(gl2) == len(i2):
                             not_naked.remove((i1,gl1))
                             not_naked.remove((i2,gl2))
@@ -391,25 +495,6 @@ class Sudoku (object):
                             return True
                 ahead +=1
         while(fn()):pass
-        
-        # handle hidden sets -- never triggering currently
-        for i, gl in not_naked:
-            if len(gl) <= 2: continue # cant be hidden
-            p = [self.index_possibilities(x) for x in gl]
-            p.sort(key=len)
-            maxp = p[-1] # longest pos list
-            shared = p[1] # shortest pos list
-            for p in p[1:-1]: shared = shared & p # union the rest of the short lists together
-            shared = maxp | shared # remove all the shared items from the longest pos list
-            if len(shared) == len(gl): # if we only share as many pos as cells
-                self.stats.append('hidden_set_constraint')
-                self.naked_groups.add((shared,gl))
-                self.not_naked.remove((i,gl))
-                for p in [self.index_possibilities(x)
-                          for x in gl]:
-                    for v in list(p):
-                        if v not in shared:
-                            p.remove(v)
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -537,7 +622,8 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    for p in puzzles2.puzzles:
+    puz = puzzles2.puzzles
+    for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()
@@ -547,7 +633,7 @@ def solve_some_puzzles():
         total_time += ptime
         print "Done with puzzle %s in %s sec" % (i, ptime)
         i+=1
-    print "Done with %d puzzles in %s sec" % (len(puzzles2.puzzles), total_time)
+    print "Done with %d puzzles in %s sec" % (len(puz), total_time)
 
      
 if __name__ == "__main__":
