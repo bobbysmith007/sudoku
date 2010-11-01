@@ -136,7 +136,7 @@ class Sudoku (object):
         except NoPossibleValues,e:
             if self.parent: raise e
             else:
-                print "ERROR ON BOARD:\n",self
+                print "ERROR ON BOARD:\n", self.print_help(),"\n\n",self
                 raise e
         if self.is_solved(): return self
 
@@ -158,7 +158,7 @@ class Sudoku (object):
             #self.puzzle = deepcopy(sol.puzzle)
             sol.status()
         else:
-            print self
+            print self.print_help(),"\n\n",self
             raise Exception("Puzzle Not Solved...")
         return sol
             
@@ -171,6 +171,7 @@ class Sudoku (object):
     def set_puzzle_val(self, idx, v):
         #self.clear_puzzle_possibility_cache()
         self.puzzle[idx.row][idx.col] = v
+        self.ip.memo[idx] = set([v])
         self.unsolved_idxs.remove(idx)
     
     def constrain(self):
@@ -212,9 +213,9 @@ class Sudoku (object):
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
                     if len(p)==1:
-                        value = p.pop()
                         idx_pos = self.index_possibilities(idx)
                         to_rem = idx_pos-p
+                        value = p.pop()
                         for v in to_rem:
                             idx_pos.remove(v)
                         for i in self.free_related_cells(idx):
@@ -483,17 +484,14 @@ class Sudoku (object):
 
     def hidden_set_exclusion_in_col(self,pos,idx):
         fic = self.free_in_col(idx.col)
-        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_col_constraint')
 
     def hidden_set_exclusion_in_row(self,pos,idx):
         fic = self.free_in_row(idx.row)
-        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_row_constraint')
 
     def hidden_set_exclusion_in_square(self,pos,idx):
         fic = self.free_in_square(idx)
-        #fic.remove(idx)
         return self._hidden_sets_helper(fic,pos,'hidden_sets_square_constraint')
 
     def _naked_sets_helper(self, free_list, pos, name):
@@ -532,7 +530,30 @@ class Sudoku (object):
                             not_naked.append((i2,gl1+gl2))
                             return True
                 ahead +=1
-        while(fn()):pass                        
+        while(fn()):pass
+        
+        for vals, idxs in not_naked:
+            #smallest subset of hidden
+            if len(vals)==1+len(idxs) and len(idxs)==2:
+                x = set.intersection(*map(self.index_possibilities,idxs))
+                others = set(free_list)-set(idxs)
+                if len(others)==0: continue
+                y = set.union(*map(self.index_possibilities, others))
+                if len(x) == len(idxs) and x.isdisjoint(y) and\
+                        len(vals-(x|y))==0 :
+                    #print "Not",vals,\
+                    #    [(idx, self.index_possibilities(idx))for idx in idxs]\
+                    #    ,"\n ",x,y,x.isdisjoint(y),free_list
+                    #print self.print_help()
+                    to_rem = vals-x
+                    self.stats.inc('nuded_a_set')
+                    for idx in idxs:
+                        p = self.index_possibilities(idx)
+                        for v in to_rem:
+                            if v in p:
+                                p.remove(v)
+                    naked_groups.append((x,idxs))
+                    not_naked.remove((vals, idxs))
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -560,17 +581,14 @@ class Sudoku (object):
         
     def naked_sets_exclusion_in_col(self,pos,idx):
         fic = self.free_in_col(idx.col)
-        fic.remove(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_col')
 
     def naked_sets_exclusion_in_row(self,pos,idx):
         fic = self.free_in_row(idx.row)
-        fic.remove(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_row')
 
     def naked_sets_exclusion_in_square(self,pos,idx):
         fic = self.free_in_square(idx)
-        fic.remove(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_square')
 
     def index_constraints(self,idx):
@@ -627,6 +645,29 @@ class Sudoku (object):
             s.write('\n')
             if i%3==2: s.write("-------------------------------\n")
         return s.getvalue()
+
+    def print_help(self):
+        lb = "-------------------------------"\
+            "---------------------------------"\
+            "-------------------------------\n"
+        s = StringIO()
+        s.write(lb)
+        s.write(self.status())
+        s.write(lb)
+        for i in PIDXS:
+            s.write('||')
+            for j in PIDXS:
+                idx = Index(i,j)
+                pos = self.index_possibilities(idx)
+                for l in PVALS:
+                    if l in pos: s.write(l)
+                    else: s.write(' ')
+                s.write('|')
+                if j%3==2: s.write('|')
+            s.write('\n')
+            if i%3==2: s.write(lb)
+        return s.getvalue()
+
 
 def read_puzzle (s):
     puzzle = [[None for j in PIDXS]
