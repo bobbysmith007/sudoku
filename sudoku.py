@@ -166,17 +166,17 @@ class Sudoku (object):
 
         constraints = [
             
-            self.naked_sets_exclusion_in_col,
-            self.naked_sets_exclusion_in_square,
-            self.naked_sets_exclusion_in_row,
+            # self.naked_sets_exclusion_in_col,
+            # self.naked_sets_exclusion_in_square,
+            # self.naked_sets_exclusion_in_row,
 
             self.unique_possibility_in_row,
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
 
-            # self.hidden_set_exclusion_in_col,
-            # self.hidden_set_exclusion_in_row,
-            # self.hidden_set_exclusion_in_square,
+            self.set_exclusion_in_col,
+            self.set_exclusion_in_row,
+            self.set_exclusion_in_square,
 
 
             self.xwing_col_constraint, 
@@ -379,7 +379,7 @@ class Sudoku (object):
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
-    def _hidden_sets_helper(self, free_list, pos, name):
+    def _sets_helper(self, free_list, pos, name):
         """ If a set of cells are the only cells that can hold a 
         set of values of equal length, then those values must be 
         in those squares. So remove all other possibilities from
@@ -393,86 +393,77 @@ class Sudoku (object):
                 pcnts[v-1].idxs.append(idx)
 
         # remove any values that are not possible and close this
-        pcnts = Ref(it=[i for i in pcnts if len(i)>0])
+        pcnts = Ref(it=[i for i in pcnts if len(i)>1])
         
-        hidden_sets = []
+        sets = []
         # look for hidden sets by looking at every combination
         # of values, and finding ones that share a common set 
         # of indexs exclusively
         def fn():
             cmbs = every_combo(pcnts.it)
             for cmb in cmbs:
-                idxs = set.union(*map(set,cmb))
+                #union all the indexes for the value set we are looking at
+                idxs = set.union(*map(set,cmb)) 
                 vals = set(pcnt.val for pcnt in cmb)
-                if len(idxs) != len(vals): continue
-                idx_pos = [self.index_possibilities(idx)
-                           for idx in idxs]
-                val_len = len(vals)
-                
-                set_is_related = False
-                idx_intersect = set.intersection(*idx_pos)
-                int_len = len(idx_intersect)
-                if len(cmb)==2:
-                    set_is_related = idx_intersect == vals and \
-                        any(len(p)>2 for p in idx_pos)
+                others = (set(free_list) - set(idxs))
 
-                if len(cmb)==3:
-                    set_is_related = False
-                        #any(len(idx_intersect) == len(vals & p)
-                        #    for p in idx_pos) and \
-                        #all(len(vals & p) >=2
-                        #    for p in idx_pos)
-                         
-                if len(cmb)==4:
-                    pass
-                if len(cmb)==5:
-                    pass
-                if len(cmb)==6:
-                    pass
+                # we are looking for boxes that can share a specific set
+                # of values exclusively so we need to be able to put
+                # each value in a box
+                if len(idxs) != len(vals) or len(others)==0: continue
+
+                try:
+                    other_pos = set.union(*[self.index_possibilities(idx)
+                                            for idx in others])
+                except Exception, e:
+                    print others,[self.index_possibilities(idx)
+                                            for idx in others]
+                    raise e
+            
+                # none of our values should be placeable elsewhere
+                set_is_related = all(v not in other_pos 
+                                     for v in vals)
                 
+                # Sanity: none of the values we are 
+                # removing can only be here
+                set_is_related &= all(v in other_pos
+                                      for i in idxs
+                                      for v in self.index_possibilities(i)-vals)
+            
                 if set_is_related:
-                    hidden_sets.append((vals,idxs))
+                    sets.append((vals,idxs))
                     pcnts.it = [pcnt for pcnt in pcnts.it
                                 if pcnt.val not in vals]
                     return True
         while( len(pcnts.it) > 1 and fn()): pass
         
-        for vals,idxs in hidden_sets:
-            print vals, " in ",[(self.index_possibilities(idx),idx, idx in idxs)
-                                for idx in free_list]
-            other_pos = [self.index_possibilities(idx)
-                         for idx in (set(free_list) - set(idxs))]
-            # sanity check, none of our values should be placeable elsewhere
-            if any(any(v in p for p in other_pos)
-                   for v in vals):
-                raise Exception("Broken hidden set %s found in %s for idx ? which wasnt in %s" % \
-                                    (v, p, idxs))
+        for vals,idxs in sets:
+            #print vals, " in ",[(self.index_possibilities(idx),idx, idx in idxs)
+            #                   for idx in free_list]
+
+            others = (set(free_list) - set(idxs))
 
             # constrain the related indexes in the set
             self.stats.inc(name)
-            for idx in idxs:
-                # sanity check none of the values we are removing can
-                # only be here
-                if all(v not in p 
-                       for p in other_pos
-                       for v in self.index_possibilities(idx)-vals):
-                    raise Exception("Removing a val that can be no"
-                                    " where else:%s-%s"% (v, other_pos))
-                self.remove_index_possibilities(idx,vals)
+            for idx in idxs: # our indexes cant have anything but our values
+                self.set_index_possibilities(
+                    idx, vals&self.index_possibilities(idx))
                 self._constrained_this_cycle=True
+            for idx in others: # other indexes cant have our values
+                self.remove_index_possibilities(idx, vals)
         return pos
 
-    def hidden_set_exclusion_in_col(self,pos,idx):
+    def set_exclusion_in_col(self,pos,idx):
         fic = self.free_in_col(idx.col)
-        return self._hidden_sets_helper(fic,pos,'hidden_sets_col_constraint')
+        return self._sets_helper(fic,pos,'sets_col_constraint')
 
-    def hidden_set_exclusion_in_row(self,pos,idx):
+    def set_exclusion_in_row(self,pos,idx):
         fic = self.free_in_row(idx.row)
-        return self._hidden_sets_helper(fic,pos,'hidden_sets_row_constraint')
+        return self._sets_helper(fic,pos,'sets_row_constraint')
 
-    def hidden_set_exclusion_in_square(self,pos,idx):
+    def set_exclusion_in_square(self,pos,idx):
         fic = self.free_in_square(idx)
-        return self._hidden_sets_helper(fic,pos,'hidden_sets_square_constraint')
+        return self._sets_helper(fic,pos,'sets_square_constraint')
 
     def _naked_sets_helper(self, free_list, pos, name):
         free_list.sort(key=self.index_possibilities)
@@ -512,6 +503,7 @@ class Sudoku (object):
                 ahead +=1
         while(fn()):pass
         
+        c=""" #hidden sets       
         for vals, idxs in not_naked:
             if not len(vals)>len(idxs): continue
             others = set(free_list)-set(idxs)
@@ -531,7 +523,7 @@ class Sudoku (object):
                         self.remove_index_possibilities(idx, vals-x)
                     naked_groups.append((x,idxs))
                     not_naked.remove((vals, idxs))
-        
+"""        
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
         # from everyone elses possibilities
