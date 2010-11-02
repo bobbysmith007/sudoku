@@ -651,7 +651,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = [puzzles.puzzles[11]]
+    puz = puzzles.puzzles
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
