@@ -167,22 +167,23 @@ class Sudoku (object):
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
 
-            self.xwing_col_constraint,
-            self.xwing_row_constraint,
-
             # These seem to be not constraing over the others
             # self.squeeze_col, self.squeeze_row,
 
             ]
         def run_set_constraints():
-            for i in PIDXS:
-                idx = Index(i,0)
-                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
             for j in PIDXS:
                 idx = Index(0,j)
+                self.xwing_col_constraint(self.index_possibilities(idx),idx)
                 self.set_exclusion_in_col(self.index_possibilities(idx),idx)
                 self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
+
+            for i in PIDXS:
+                idx = Index(i,0)
+                self.xwing_row_constraint(self.index_possibilities(idx),idx)
+                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
+
             for i in range(0,3):
                 for j in range(0,3):
                     idx = Index(i*3,j*3)
@@ -255,23 +256,22 @@ class Sudoku (object):
             if self.puzzle[i][col] == val: return True
 
     def xwing_col_constraint(self, pos, idx):
-        # buid a collection of row->possibility->number of times that
-        # possibility occurs
+        # buid a collection of row->pos->idxs that pos occurs
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
+            row=posCounts[i.row]
             for val in self.index_possibilities(i):
-                posCounts[i.row][val-1].idxs.append(i)
-        p = deepcopy(pos)
+                row[val-1].idxs.append(i)
 
         #for all of the values in my square, check to see
         # if an xwing removes counts
-        for val in p:
+        for val in list(pos):
             i1=None
             i2=None
             for i in PIDXS:
                 # 2 cells share this possibility
-                if i!=idx.row and len(posCounts[i][val-1])==2: 
+                if len(posCounts[i][val-1])==2: 
                     if i1: i2=i
                     else: i1=i
             if i1 and i2: 
@@ -288,9 +288,7 @@ class Sudoku (object):
                 # we have an xwing square
                 sv = set([val])
                 pos = pos - sv
-                if self.remove_index_possibilities(idx,sv):
-                    self.stats.inc('xwing_col')
-                others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([idx,c1,c2,c3,c4])
+                others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([c1,c2,c3,c4])
                 for o in others:
                     if self.remove_index_possibilities(o,sv):
                         self.stats.inc('xwing_col')
@@ -300,15 +298,15 @@ class Sudoku (object):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilities(idx):
-                posCounts[i.col][val-1].idxs.append(i)
-        p = deepcopy(pos)
+            col = posCounts[i.col]
+            for val in self.index_possibilities(i):
+                col[val-1].idxs.append(i)
 
-        for val in p:
+        for val in list(pos):
             j1=None
             j2=None
             for j in PIDXS:
-                if j!=idx.col and len(posCounts[j][val-1])==2: # 2 cells share this pos
+                if len(posCounts[j][val-1])==2: # 2 cells share this pos
                     if j1: j2=j
                     else: j1=j
             if j1 and j2:
@@ -322,9 +320,7 @@ class Sudoku (object):
                 # we have an xwing square
                 sv = set([val])
                 pos = pos - sv
-                if self.remove_index_possibilities(idx,sv):
-                    self.stats.inc('xwing_row')
-                others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([idx,c1,c2,c3,c4])
+                others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([c1,c2,c3,c4])
                 for o in others:
                     if self.remove_index_possibilities(o,sv):
                         self.stats.inc('xwing_row')
