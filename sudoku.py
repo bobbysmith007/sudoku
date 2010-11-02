@@ -425,11 +425,11 @@ class Sudoku (object):
                                      for v in vals)
 
                 # trying to pull naked sets into here
-                idx_pos = [self.index_possibilities(idx)
-                           for idx in idxs]
-                fullestpos = max(idx_pos,key=len)
-                set_is_related |= all(p <= fullestpos
-                                     for p in idx_pos)
+                # idx_pos = [self.index_possibilities(idx)
+                #            for idx in idxs]
+                # fullestpos = max(idx_pos,key=len)
+                # set_is_related |= all(p <= fullestpos
+                #                      for p in idx_pos)
                 
                 # Sanity: none of the values we are 
                 # removing can only be here
