@@ -5,7 +5,8 @@ import logging
 from copy import deepcopy, copy
 import puzzles, puzzles2
 
-logging.basicConfig(level=logging.info)
+
+logging.basicConfig(level=logging.INFO)
 
 PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
@@ -125,7 +126,8 @@ class Sudoku (object):
                 raise e
         if self.is_solved(): return self
 
-        logging.warning("Couldn't solve board via constraints, %s\nStarting to guess",self)
+#        logging.info("Couldn't solve board via constraints, %s\nStarting to guess",
+#                     self.print_help())
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
         # otherwise any mistake is enough to backtrack
@@ -415,17 +417,19 @@ class Sudoku (object):
                 # each value in a box
                 if len(idxs) != len(vals) or len(others)==0: continue
 
-                try:
-                    other_pos = set.union(*[self.index_possibilities(idx)
-                                            for idx in others])
-                except Exception, e:
-                    print others,[self.index_possibilities(idx)
-                                            for idx in others]
-                    raise e
+                other_pos = set.union(*[self.index_possibilities(idx)
+                                        for idx in others])
             
                 # none of our values should be placeable elsewhere
                 set_is_related = all(v not in other_pos 
                                      for v in vals)
+
+                # trying to pull naked sets into here
+                idx_pos = [self.index_possibilities(idx)
+                           for idx in idxs]
+                fullestpos = max(idx_pos,key=len)
+                set_is_related |= all(p <= fullestpos
+                                     for p in idx_pos)
                 
                 # Sanity: none of the values we are 
                 # removing can only be here
@@ -503,6 +507,31 @@ class Sudoku (object):
                             return True
                 ahead +=1
         while(fn()):pass
+
+        # I DONT THINK THIS SHOULD EVER BE HIT IF WE DID OUR OTHER SET
+        # EXCLUSION CORRECTLY
+        #
+        # Look for hidden sets if we find one, turn it into a naked set
+        # and pass it on
+        for vals, idxs in not_naked:
+            if not len(vals)>len(idxs): continue
+            others = set(free_list)-set(idxs)
+            if len(others)==0: continue
+            #smallest subset of hidden
+            x = set.intersection(*map(self.index_possibilities,idxs))
+            y = set.union(*map(self.index_possibilities, others))
+            if not x.isdisjoint(y) or len(vals-(x|y)) != 0:continue
+            if len(idxs)==2:
+                if len(x) == len(idxs) :
+                    #print "Not",vals,\
+                    #    [(idx, self.index_possibilities(idx))for idx in idxs]\
+                    #    ,"\n ",x,y,x.isdisjoint(y),free_list
+                    #print self.print_help()
+                    for idx in idxs:
+                        if self.remove_index_possibilities(idx, vals-x):
+                            self.stats.inc('nuded_a_set')
+                    naked_groups.append((x,idxs))
+                    not_naked.remove((vals, idxs))
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
@@ -577,7 +606,7 @@ class Sudoku (object):
         for k,v in items:
             s.write('  %s : %s \n' % (k,v))
         s = s.getvalue()
-        logging.info(s)
+        #logging.info(s)
         return s
 
     def __str__(self):
