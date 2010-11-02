@@ -164,27 +164,37 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
 
-        constraints = [
-            
-            # self.naked_sets_exclusion_in_col,
-            # self.naked_sets_exclusion_in_square,
-            # self.naked_sets_exclusion_in_row,
+        set_constraints=[
+            self.set_exclusion_in_col,
+            self.set_exclusion_in_row,
+            self.set_exclusion_in_square,]
 
+        constraints = [
             self.unique_possibility_in_row,
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
 
-            self.set_exclusion_in_col,
-            self.set_exclusion_in_row,
-            self.set_exclusion_in_square,
-
-
-            self.xwing_col_constraint, 
+            self.xwing_col_constraint,
             self.xwing_row_constraint,
 
             # These seem to be not constraing over the others
-            self.squeeze_col, self.squeeze_row,
+            # self.squeeze_col, self.squeeze_row,
+            # self.naked_sets_exclusion_in_col,
+            # self.naked_sets_exclusion_in_square,
+            # self.naked_sets_exclusion_in_row,
             ]
+        def run_set_constraints():
+            for i in PIDXS:
+                idx = Index(i,0)
+                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+            for j in PIDXS:
+                idx = Index(0,j)
+                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+            for i in range(0,3):
+                for j in range(0,3):
+                    idx = Index(i*3,j*3)
+                    self.set_exclusion_in_square(self.index_possibilities(idx),idx)
+            
         def fn():
             self._constrained_this_cycle = False
             for cons in constraints:
@@ -207,6 +217,7 @@ class Sudoku (object):
                         self.set_puzzle_val(idx,list(p)[0])
                         self._constrained_this_cycle = True
                     elif len(p)==0: raise NoPossibleValues(idx)
+            run_set_constraints()
             return self._constrained_this_cycle
         while(fn()): pass
         
@@ -352,7 +363,7 @@ class Sudoku (object):
         for v in pos:
             not_allowed_elsewhere = \
                 all(not v in self.index_possibilities(i)
-                     for i in cells)
+                    for i in cells)
             if not_allowed_elsewhere:
                 self.stats.inc(name)
                 return set([v])
@@ -364,7 +375,7 @@ class Sudoku (object):
         """
         cells = self.free_in_square(idx)
         cells.remove(idx)
-        return self._unique_possibility_helper( cells, pos, 'unique_in_square')
+        return self._unique_possibility_helper(  cells, pos, 'unique_in_square')
 
     def unique_possibility_in_row(self,pos,idx):
         """ constrain possibilities by crosshatching
@@ -396,7 +407,7 @@ class Sudoku (object):
         pcnts = Ref(it=[i for i in pcnts if len(i)>1])
         
         sets = []
-        # look for hidden sets by looking at every combination
+        # look for sets by looking at every combination
         # of values, and finding ones that share a common set 
         # of indexs exclusively
         def fn():
@@ -503,27 +514,6 @@ class Sudoku (object):
                 ahead +=1
         while(fn()):pass
         
-        c=""" #hidden sets       
-        for vals, idxs in not_naked:
-            if not len(vals)>len(idxs): continue
-            others = set(free_list)-set(idxs)
-            if len(others)==0: continue
-            #smallest subset of hidden
-            x = set.intersection(*map(self.index_possibilities,idxs))
-            y = set.union(*map(self.index_possibilities, others))
-            if not x.isdisjoint(y) or len(vals-(x|y)) != 0:continue
-            if len(idxs)==2:
-                if len(x) == len(idxs) :
-                    #print "Not",vals,\
-                    #    [(idx, self.index_possibilities(idx))for idx in idxs]\
-                    #    ,"\n ",x,y,x.isdisjoint(y),free_list
-                    #print self.print_help()
-                    self.stats.inc('nuded_a_set')
-                    for idx in idxs:
-                        self.remove_index_possibilities(idx, vals-x)
-                    naked_groups.append((x,idxs))
-                    not_naked.remove((vals, idxs))
-"""        
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
         # from everyone elses possibilities
@@ -537,15 +527,6 @@ class Sudoku (object):
                             self.stats.inc(name+'_contraint')
                             to_tell.remove(i)
 
-        # if I want to resolve the current square based on this I should uncomment,
-        # but i want it to work just by removing possibilities now
-#        if len(groups)>0:
-#            # print "NAKED COL SET", groups
-#            for not_pos, idxs in groups:
-#                p = pos - not_pos
-#                if len(p)==1:
-#                    self.stats.inc(name)
-#                    return p
         return pos
         
     def naked_sets_exclusion_in_col(self,pos,idx):
