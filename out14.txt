@@ -23,18 +23,22 @@ Solved Puzzle:
 | 7  4  2 | 3  9  8 | 6  5  1 |
 -------------------------------
 
-Done with puzzle 1 in 0.240782022476 sec
+Done with puzzle 1 in 0.28164100647 sec
 Starting puzzle 2
 -------------------------------
 Solved Puzzle: 
-  464 - Constraint Cycles
+  441 - Constraint Cycles
   1 - Branches
 
+  naked_sets_col_contraint : 2 
+  naked_sets_row_contraint : 1 
+  naked_sets_square_contraint : 2 
+  sets_col_constraint : 2 
   sets_square_constraint : 2 
   single_possibility : 31 
-  unique_in_col : 7 
-  unique_in_row : 8 
-  unique_in_square : 4 
+  unique_in_col : 4 
+  unique_in_row : 13 
+  unique_in_square : 2 
 -------------------------------
 | 8  2  6 | 3  5  9 | 7  1  4 |
 | 3  1  5 | 7  2  4 | 9  6  8 |
@@ -49,7 +53,7 @@ Solved Puzzle:
 | 9  8  1 | 6  3  2 | 4  5  7 |
 -------------------------------
 
-Done with puzzle 2 in 1.46451497078 sec
+Done with puzzle 2 in 1.04846000671 sec
 Starting puzzle 3
 -------------------------------
 Solved Puzzle: 
@@ -74,19 +78,23 @@ Solved Puzzle:
 | 7  9  6 | 5  1  4 | 8  2  3 |
 -------------------------------
 
-Done with puzzle 3 in 0.165639877319 sec
+Done with puzzle 3 in 0.170828104019 sec
 Starting puzzle 4
 -------------------------------
 Solved Puzzle: 
-  331 - Constraint Cycles
+  304 - Constraint Cycles
   1 - Branches
 
+  naked_sets_col_contraint : 8 
+  naked_sets_row_contraint : 3 
+  naked_sets_square_contraint : 3 
+  sets_col_constraint : 3 
   sets_row_constraint : 2 
   sets_square_constraint : 1 
-  single_possibility : 33 
-  unique_in_col : 8 
-  unique_in_row : 8 
-  unique_in_square : 2 
+  single_possibility : 39 
+  unique_in_col : 4 
+  unique_in_row : 7 
+  unique_in_square : 1 
 -------------------------------
 | 3  5  7 | 9  2  4 | 6  1  8 |
 | 6  4  1 | 8  5  3 | 7  2  9 |
@@ -101,19 +109,23 @@ Solved Puzzle:
 | 9  2  3 | 4  1  6 | 8  7  5 |
 -------------------------------
 
-Done with puzzle 4 in 0.437804937363 sec
+Done with puzzle 4 in 0.486312866211 sec
 Starting puzzle 5
 -------------------------------
 Solved Puzzle: 
-  833 - Constraint Cycles
+  605 - Constraint Cycles
   1 - Branches
 
-  sets_row_constraint : 2 
-  sets_square_constraint : 4 
-  single_possibility : 33 
-  unique_in_col : 11 
-  unique_in_row : 11 
-  unique_in_square : 4 
+  naked_sets_col_contraint : 9 
+  naked_sets_row_contraint : 5 
+  naked_sets_square_contraint : 4 
+  sets_col_constraint : 1 
+  sets_row_constraint : 3 
+  sets_square_constraint : 6 
+  single_possibility : 43 
+  unique_in_col : 4 
+  unique_in_row : 7 
+  unique_in_square : 5 
 -------------------------------
 | 8  5  9 | 6  1  2 | 4  3  7 |
 | 7  2  3 | 8  5  4 | 1  6  9 |
@@ -128,19 +140,24 @@ Solved Puzzle:
 | 5  9  8 | 7  3  6 | 2  4  1 |
 -------------------------------
 
-Done with puzzle 5 in 1.82686901093 sec
+Done with puzzle 5 in 1.25927495956 sec
 Starting puzzle 6
 -------------------------------
 Solved Puzzle: 
-  8881 - Constraint Cycles
-  29 - Branches
+  8106 - Constraint Cycles
+  25 - Branches
 
+  naked_sets_col_contraint : 9 
+  naked_sets_row_contraint : 11 
+  naked_sets_square_contraint : 12 
+  sets_col_constraint : 8 
   sets_row_constraint : 4 
-  sets_square_constraint : 4 
-  single_possibility : 188 
-  unique_in_col : 40 
-  unique_in_row : 80 
-  unique_in_square : 26 
+  sets_square_constraint : 8 
+  single_possibility : 164 
+  unique_in_col : 28 
+  unique_in_row : 55 
+  unique_in_square : 31 
+  xwing_row : 1 
 -------------------------------
 | 1  4  5 | 3  2  7 | 6  9  8 |
 | 8  3  9 | 6  5  4 | 1  2  7 |
@@ -155,15 +172,16 @@ Solved Puzzle:
 | 5  2  1 | 8  3  9 | 7  6  4 |
 -------------------------------
 
-Done with puzzle 6 in 24.5759999752 sec
+Done with puzzle 6 in 22.5894420147 sec
 Starting puzzle 7
 -------------------------------
 Solved Puzzle: 
-  11564 - Constraint Cycles
+  10939 - Constraint Cycles
   27 - Branches
 
+  sets_col_constraint : 7 
   sets_row_constraint : 8 
-  sets_square_constraint : 13 
+  sets_square_constraint : 7 
   single_possibility : 26 
   unique_in_col : 5 
   unique_in_row : 6 
@@ -182,19 +200,23 @@ Solved Puzzle:
 | 5  6  7 | 8  4  1 | 3  9  2 |
 -------------------------------
 
-Done with puzzle 7 in 56.9233570099 sec
+Done with puzzle 7 in 66.1987600327 sec
 Starting puzzle 8
 -------------------------------
 Solved Puzzle: 
-  833 - Constraint Cycles
+  605 - Constraint Cycles
   1 - Branches
 
-  sets_row_constraint : 2 
-  sets_square_constraint : 4 
-  single_possibility : 33 
-  unique_in_col : 11 
-  unique_in_row : 11 
-  unique_in_square : 4 
+  naked_sets_col_contraint : 9 
+  naked_sets_row_contraint : 5 
+  naked_sets_square_contraint : 4 
+  sets_col_constraint : 1 
+  sets_row_constraint : 3 
+  sets_square_constraint : 6 
+  single_possibility : 43 
+  unique_in_col : 4 
+  unique_in_row : 7 
+  unique_in_square : 5 
 -------------------------------
 | 8  5  9 | 6  1  2 | 4  3  7 |
 | 7  2  3 | 8  5  4 | 1  6  9 |
@@ -209,45 +231,20 @@ Solved Puzzle:
 | 5  9  8 | 7  3  6 | 2  4  1 |
 -------------------------------
 
-Done with puzzle 8 in 1.86515402794 sec
+Done with puzzle 8 in 1.35503602028 sec
 Starting puzzle 9
--------------------------------
-Solved Puzzle: 
-  8881 - Constraint Cycles
-  29 - Branches
-
-  sets_row_constraint : 4 
-  sets_square_constraint : 4 
-  single_possibility : 188 
-  unique_in_col : 40 
-  unique_in_row : 80 
-  unique_in_square : 26 
--------------------------------
-| 1  4  5 | 3  2  7 | 6  9  8 |
-| 8  3  9 | 6  5  4 | 1  2  7 |
-| 6  7  2 | 9  1  8 | 5  4  3 |
--------------------------------
-| 4  9  6 | 1  8  5 | 3  7  2 |
-| 2  1  8 | 4  7  3 | 9  5  6 |
-| 7  5  3 | 2  9  6 | 4  8  1 |
--------------------------------
-| 3  6  7 | 5  4  2 | 8  1  9 |
-| 9  8  4 | 7  6  1 | 2  3  5 |
-| 5  2  1 | 8  3  9 | 7  6  4 |
--------------------------------
-
-Done with puzzle 9 in 26.2151119709 sec
-Starting puzzle 10
 -------------------------------
 Solved Puzzle: 
   2437 - Constraint Cycles
   6 - Branches
 
+  naked_sets_row_contraint : 1 
+  sets_col_constraint : 1 
   sets_row_constraint : 3 
-  sets_square_constraint : 4 
-  single_possibility : 45 
+  sets_square_constraint : 3 
+  single_possibility : 46 
   unique_in_col : 11 
-  unique_in_row : 7 
+  unique_in_row : 6 
   unique_in_square : 7 
 -------------------------------
 | 1  2  8 | 5  4  7 | 6  3  9 |
@@ -263,20 +260,24 @@ Solved Puzzle:
 | 2  5  3 | 1  7  8 | 9  6  4 |
 -------------------------------
 
-Done with puzzle 10 in 5.12697792053 sec
-Starting puzzle 11
+Done with puzzle 9 in 7.64205408096 sec
+Starting puzzle 10
 -------------------------------
 Solved Puzzle: 
-  12386 - Constraint Cycles
-  35 - Branches
+  10143 - Constraint Cycles
+  21 - Branches
 
-  sets_row_constraint : 8 
-  sets_square_constraint : 25 
-  single_possibility : 261 
-  unique_in_col : 53 
-  unique_in_row : 75 
-  unique_in_square : 32 
-  xwing_row : 1 
+  naked_sets_col_contraint : 14 
+  naked_sets_row_contraint : 11 
+  naked_sets_square_contraint : 8 
+  sets_col_constraint : 28 
+  sets_row_constraint : 9 
+  sets_square_constraint : 11 
+  single_possibility : 139 
+  unique_in_col : 20 
+  unique_in_row : 39 
+  unique_in_square : 10 
+  xwing_row : 16 
 -------------------------------
 | 6  2  4 | 5  7  8 | 1  3  9 |
 | 1  3  5 | 4  9  6 | 8  2  7 |
@@ -291,16 +292,18 @@ Solved Puzzle:
 | 3  7  1 | 8  4  9 | 5  6  2 |
 -------------------------------
 
-Done with puzzle 11 in 32.5629279613 sec
-Starting puzzle 12
+Done with puzzle 10 in 31.1975929737 sec
+Starting puzzle 11
 -------------------------------
 Solved Puzzle: 
   330 - Constraint Cycles
   1 - Branches
 
-  single_possibility : 41 
+  naked_sets_col_contraint : 1 
+  naked_sets_row_contraint : 1 
+  single_possibility : 43 
   unique_in_col : 4 
-  unique_in_row : 12 
+  unique_in_row : 10 
   unique_in_square : 2 
 -------------------------------
 | 7  9  6 | 1  5  2 | 3  8  4 |
@@ -316,20 +319,23 @@ Solved Puzzle:
 | 8  7  3 | 5  2  6 | 4  1  9 |
 -------------------------------
 
-Done with puzzle 12 in 0.656826972961 sec
-Starting puzzle 13
+Done with puzzle 11 in 0.540709018707 sec
+Starting puzzle 12
 -------------------------------
 Solved Puzzle: 
-  7862 - Constraint Cycles
+  7960 - Constraint Cycles
   23 - Branches
 
+  naked_sets_row_contraint : 2 
+  naked_sets_square_contraint : 10 
+  sets_col_constraint : 16 
   sets_row_constraint : 7 
-  sets_square_constraint : 12 
-  single_possibility : 138 
-  unique_in_col : 24 
-  unique_in_row : 46 
-  unique_in_square : 23 
-  xwing_row : 2 
+  sets_square_constraint : 6 
+  single_possibility : 145 
+  unique_in_col : 20 
+  unique_in_row : 43 
+  unique_in_square : 21 
+  xwing_row : 20 
 -------------------------------
 | 1  6  2 | 8  5  7 | 4  9  3 |
 | 5  3  4 | 1  2  9 | 6  7  8 |
@@ -344,18 +350,22 @@ Solved Puzzle:
 | 8  9  7 | 2  6  1 | 3  5  4 |
 -------------------------------
 
-Done with puzzle 13 in 23.0420269966 sec
-Starting puzzle 14
-^X-------------------------------
+Done with puzzle 12 in 25.0827720165 sec
+Starting puzzle 13
+-------------------------------
 Solved Puzzle: 
-  1368 - Constraint Cycles
+  1198 - Constraint Cycles
   3 - Branches
 
+  naked_sets_col_contraint : 3 
+  naked_sets_row_contraint : 2 
+  naked_sets_square_contraint : 2 
+  sets_col_constraint : 9 
   sets_square_constraint : 5 
-  single_possibility : 28 
-  unique_in_col : 7 
-  unique_in_row : 13 
-  unique_in_square : 3 
+  single_possibility : 31 
+  unique_in_col : 4 
+  unique_in_row : 14 
+  unique_in_square : 2 
 -------------------------------
 | 1  5  2 | 9  3  4 | 6  8  7 |
 | 7  6  3 | 8  2  1 | 5  4  9 |
@@ -370,18 +380,22 @@ Solved Puzzle:
 | 8  9  7 | 6  4  5 | 1  3  2 |
 -------------------------------
 
-Done with puzzle 14 in 4.09236097336 sec
-Starting puzzle 15
+Done with puzzle 13 in 2.39976382256 sec
+Starting puzzle 14
 -------------------------------
 Solved Puzzle: 
-  818 - Constraint Cycles
+  960 - Constraint Cycles
   2 - Branches
 
-  sets_square_constraint : 3 
-  single_possibility : 30 
-  unique_in_col : 7 
-  unique_in_row : 12 
-  unique_in_square : 3 
+  naked_sets_row_contraint : 2 
+  naked_sets_square_contraint : 2 
+  sets_col_constraint : 6 
+  sets_square_constraint : 5 
+  single_possibility : 35 
+  unique_in_col : 6 
+  unique_in_row : 9 
+  unique_in_square : 2 
+  xwing_row : 2 
 -------------------------------
 | 3  8  7 | 9  2  6 | 4  1  5 |
 | 5  4  6 | 8  1  3 | 9  7  2 |
@@ -396,19 +410,21 @@ Solved Puzzle:
 | 8  2  9 | 1  6  4 | 3  5  7 |
 -------------------------------
 
-Done with puzzle 15 in 1.31382203102 sec
-Starting puzzle 16
+Done with puzzle 14 in 3.28167009354 sec
+Starting puzzle 15
 -------------------------------
 Solved Puzzle: 
-  1309 - Constraint Cycles
+  1305 - Constraint Cycles
   3 - Branches
 
-  sets_row_constraint : 2 
-  sets_square_constraint : 1 
-  single_possibility : 40 
-  unique_in_col : 5 
-  unique_in_row : 6 
-  unique_in_square : 4 
+  naked_sets_col_contraint : 3 
+  naked_sets_square_contraint : 2 
+  sets_col_constraint : 1 
+  sets_row_constraint : 3 
+  single_possibility : 45 
+  unique_in_col : 4 
+  unique_in_row : 3 
+  unique_in_square : 3 
 -------------------------------
 | 8  6  9 | 5  7  4 | 1  3  2 |
 | 1  2  4 | 3  9  6 | 7  5  8 |
@@ -423,8 +439,8 @@ Solved Puzzle:
 | 6  5  8 | 2  1  3 | 9  4  7 |
 -------------------------------
 
-Done with puzzle 16 in 3.73589801788 sec
-Starting puzzle 17
+Done with puzzle 15 in 4.26795005798 sec
+Starting puzzle 16
 -------------------------------
 Solved Puzzle: 
   1643 - Constraint Cycles
@@ -448,19 +464,24 @@ Solved Puzzle:
 | 2  4  9 | 8  6  1 | 7  3  5 |
 -------------------------------
 
-Done with puzzle 17 in 3.73111701012 sec
-Starting puzzle 18
+Done with puzzle 16 in 4.26670694351 sec
+Starting puzzle 17
 -------------------------------
 Solved Puzzle: 
-  5614 - Constraint Cycles
+  5587 - Constraint Cycles
   14 - Branches
 
-  sets_row_constraint : 3 
+  naked_sets_col_contraint : 5 
+  naked_sets_row_contraint : 6 
+  naked_sets_square_contraint : 6 
+  sets_col_constraint : 1 
+  sets_row_constraint : 5 
   sets_square_constraint : 7 
-  single_possibility : 71 
-  unique_in_col : 32 
-  unique_in_row : 33 
+  single_possibility : 77 
+  unique_in_col : 26 
+  unique_in_row : 32 
   unique_in_square : 16 
+  xwing_row : 3 
 -------------------------------
 | 5  9  4 | 8  7  6 | 1  2  3 |
 | 8  2  3 | 9  1  4 | 7  5  6 |
@@ -475,6 +496,24 @@ Solved Puzzle:
 | 2  7  8 | 1  6  9 | 4  3  5 |
 -------------------------------
 
-Done with puzzle 18 in 17.2176868916 sec
-Done with 18 puzzles in 205.194878578 sec
-Mon Nov  1 22:21:16 2010    sudoku.v4
+Done with puzzle 17 in 20.0925958157 sec
+Done with 17 puzzles in 192.161569834 sec
+Mon Nov  1 22:46:28 2010    sudoku.v4
+
+         30648708 function calls (29889389 primitive calls) in 192.865 CPU seconds
+
+   Ordered by: internal time
+   List reduced from 113 to 10 due to restriction <10>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+  9562867   28.719    0.000   28.719    0.000 sudoku.py:27(__hash__)
+   314225   21.187    0.000   44.050    0.000 {map}
+     5512   17.320    0.003   74.728    0.014 sudoku.py:403(fn)
+  1253101   14.326    0.000   41.246    0.000 sudoku.py:548(index_possibilities)
+     9619   11.463    0.001   39.022    0.004 sudoku.py:257(xwing_row_constraint)
+     9770   11.403    0.001   39.420    0.004 sudoku.py:297(xwing_col_constraint)
+  1253101   10.478    0.000   17.388    0.000 {method 'has_key' of 'dict' objects}
+  3487921    8.632    0.000    8.632    0.000 {method 'append' of 'list' objects}
+2289044/1700045    7.288    0.000   10.392    0.000 {len}
+  2055753    6.586    0.000    6.586    0.000 sudoku.py:21(__eq__)
+

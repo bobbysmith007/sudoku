@@ -257,8 +257,8 @@ class Sudoku (object):
     def xwing_row_constraint(self, pos, idx):
         # buid a collection of row->possibility->number of times that
         # possibility occurs
-        posCounts = [[PosCount(j+1) for j in range(0,9)]
-                     for i in range(0,9)]
+        posCounts = [[PosCount(v) for v in PVALS]
+                     for i in PIDXS]
         for i in self.unsolved_idxs:
             for val in self.index_possibilities(i):
                 posCounts[i.row][val-1].idxs.append(i)
@@ -287,19 +287,13 @@ class Sudoku (object):
                 if c1.col!=idx.col and c2.col!=idx.col: continue 
                 # we have an xwing square
                 pos = pos - set([val])
-                if len(pos) == 1 :
-                    #print "XWING : <%s,%s> to %s\n" % (row,col,pos)
-                    #print c1, self.index_possibilities(*c1)
-                    #print c2, self.index_possibilities(*c2)
-                    #print c3, self.index_possibilities(*c3)
-                    #print c4, self.index_possibilities(*c4)
+                if self.remove_index_possibilities(idx,set([val])):
                     self.stats.inc('xwing_row')
-                    return pos
         return pos
 
     def xwing_col_constraint(self, pos, idx):
-        posCounts = [[PosCount(j+1) for j in range(0,9)]
-                     for i in range(0,9)]
+        posCounts = [[PosCount(v) for v in PVALS]
+                     for i in PIDXS]
         for i in self.unsolved_idxs:
             for val in self.index_possibilities(idx):
                 posCounts[i.col][val-1].idxs.append(i)
@@ -313,17 +307,17 @@ class Sudoku (object):
                     if j1: j2=j
                     else: j1=j
             if j1 and j2:
-                c1,c2 = posCounts[j1][val-1].idxs
-                c3,c4 = posCounts[j2][val-1].idxs
+                c1,c3 = posCounts[j1][val-1].idxs
+                c2,c4 = posCounts[j2][val-1].idxs
                 if c1.col>c2.col: c1,c2 = c2,c1 
                 if c3.col>c4.col: c3,c4 = c4,c3
-                if c1.col!=c3.col or c2.col!=c4.col: continue # not an xwing square
-                if c1.col!=idx.col and c2.col!=idx.col: continue # not relevant to me
+                if c1.col!=c3.col or c2.col!=c4.col: continue  # not an xwing square
+                if c1.row!=idx.row and c3.row!=idx.row: continue # not relevant to me
+
                 # we have an xwing square
                 pos = pos - set([val])
-                if len(pos) == 1 : 
+                if self.remove_index_possibilities(idx,set([val])):
                     self.stats.inc('xwing_col')
-                    return pos
         return pos
 
     def squeeze_col(self, pos, idx):
@@ -651,7 +645,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles.puzzles
+    puz = [puzzles.puzzles[11]]
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
