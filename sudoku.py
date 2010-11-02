@@ -11,11 +11,9 @@ PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
 
 def every_combo(inp):
-    res = []
     for i in range(2,len(inp)):
-        res.extend(itertools.combinations(inp,i))
-    res.append(tuple(inp))
-    return res
+        for v in itertools.combinations(inp,i):
+            yield v
 
 class Index (object):
     def __init__(self,row,col):
@@ -167,7 +165,11 @@ class Sudoku (object):
         set_constraints=[
             self.set_exclusion_in_col,
             self.set_exclusion_in_row,
-            self.set_exclusion_in_square,]
+            self.set_exclusion_in_square,
+
+            self.naked_sets_exclusion_in_col,
+            self.naked_sets_exclusion_in_square,
+            self.naked_sets_exclusion_in_row,]
 
         constraints = [
             self.unique_possibility_in_row,
@@ -179,9 +181,7 @@ class Sudoku (object):
 
             # These seem to be not constraing over the others
             # self.squeeze_col, self.squeeze_row,
-            # self.naked_sets_exclusion_in_col,
-            # self.naked_sets_exclusion_in_square,
-            # self.naked_sets_exclusion_in_row,
+
             ]
         def run_set_constraints():
             for i in PIDXS:
@@ -210,12 +210,10 @@ class Sudoku (object):
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
                     if len(p)==1:
-                        self.set_index_possibilities(idx, p)
                         for i in self.free_related_cells(idx):
                             if i == idx: continue                            
                             self.remove_index_possibilities(i, p)
                         self.set_puzzle_val(idx,list(p)[0])
-                        self._constrained_this_cycle = True
                     elif len(p)==0: raise NoPossibleValues(idx)
             run_set_constraints()
             return self._constrained_this_cycle
@@ -437,9 +435,10 @@ class Sudoku (object):
                 
                 # Sanity: none of the values we are 
                 # removing can only be here
-                set_is_related &= all(v in other_pos
-                                      for i in idxs
-                                      for v in self.index_possibilities(i)-vals)
+
+                # set_is_related &= all(v in other_pos
+                #                      for i in idxs
+                #                      for v in self.index_possibilities(i)-vals)
             
                 if set_is_related:
                     sets.append((vals,idxs))
@@ -455,13 +454,15 @@ class Sudoku (object):
             others = (set(free_list) - set(idxs))
 
             # constrain the related indexes in the set
-            self.stats.inc(name)
+
+            to_inc = False
             for idx in idxs: # our indexes cant have anything but our values
-                self.set_index_possibilities(
+                to_inc |= self.set_index_possibilities(
                     idx, vals&self.index_possibilities(idx))
-                self._constrained_this_cycle=True
             for idx in others: # other indexes cant have our values
-                self.remove_index_possibilities(idx, vals)
+                to_inc |= self.remove_index_possibilities(idx, vals)
+            if to_inc:
+                self.stats.inc(name)
         return pos
 
     def set_exclusion_in_col(self,pos,idx):
@@ -520,13 +521,8 @@ class Sudoku (object):
         for not_pos,gl in naked_groups:
             for cell in free_list:
                 if not cell in gl:
-                    to_tell = self.index_possibilities(cell)
-                    for i in not_pos: 
-                        if i in to_tell: 
-                            self._constrained_this_cycle=True
-                            self.stats.inc(name+'_contraint')
-                            to_tell.remove(i)
-
+                    if self.remove_index_possibilities(cell,not_pos):
+                        self.stats.inc(name+'_contraint')
         return pos
         
     def naked_sets_exclusion_in_col(self,pos,idx):
@@ -550,13 +546,17 @@ class Sudoku (object):
         return knowns
     
     def set_index_possibilities(self,idx,pos):
+        self._constrained_this_set = False
+        if len(pos) == 0: raise NoPossibleValues(idx)
+        old = self.possibility_hash.get(idx,set())
         self.possibility_hash[idx] = pos
-        return pos
+        if old!=pos: 
+            self._constrained_this_cycle=True
+            self._constrained_this_set = True
+        return self._constrained_this_set
 
     def remove_index_possibilities(self,idx,pos):
         new_pos = self.index_possibilities(idx)-pos
-        if len(new_pos) == 0: 
-            raise NoPossibleValues(idx)
         return self.set_index_possibilities(idx, new_pos)
         
     def index_possibilities(self,idx):
@@ -565,7 +565,8 @@ class Sudoku (object):
         v = self.square_solved(idx)
         if v: return set([v])
         pos = PVALS - self.index_constraints(idx)
-        return self.set_index_possibilities(idx, pos)
+        self.set_index_possibilities(idx, pos)
+        return pos
 
     def is_solved(self):
         for i in puzzle_range: 
