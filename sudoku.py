@@ -162,15 +162,6 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
 
-        set_constraints=[
-            self.set_exclusion_in_col,
-            self.set_exclusion_in_row,
-            self.set_exclusion_in_square,
-
-            self.naked_sets_exclusion_in_col,
-            self.naked_sets_exclusion_in_square,
-            self.naked_sets_exclusion_in_row,]
-
         constraints = [
             self.unique_possibility_in_row,
             self.unique_possibility_in_col,
@@ -187,13 +178,16 @@ class Sudoku (object):
             for i in PIDXS:
                 idx = Index(i,0)
                 self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
             for j in PIDXS:
                 idx = Index(0,j)
-                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.set_exclusion_in_col(self.index_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
             for i in range(0,3):
                 for j in range(0,3):
                     idx = Index(i*3,j*3)
                     self.set_exclusion_in_square(self.index_possibilities(idx),idx)
+                    self.naked_sets_exclusion_in_square(self.index_possibilities(idx),idx)
             
         def fn():
             self._constrained_this_cycle = False
@@ -394,7 +388,6 @@ class Sudoku (object):
         in those squares. So remove all other possibilities from
         those cells
         """
-        # print "---\nStarting hidden set\n---"
         # count the possibilities for each free square
         pcnts = [PosCount(v) for v in PVALS]
         for idx in free_list:
@@ -444,17 +437,12 @@ class Sudoku (object):
                     sets.append((vals,idxs))
                     pcnts.it = [pcnt for pcnt in pcnts.it
                                 if pcnt.val not in vals]
-                    return True
+                    #return True
         while( len(pcnts.it) > 1 and fn()): pass
         
         for vals,idxs in sets:
-            #print vals, " in ",[(self.index_possibilities(idx),idx, idx in idxs)
-            #                   for idx in free_list]
-
             others = (set(free_list) - set(idxs))
-
             # constrain the related indexes in the set
-
             to_inc = False
             for idx in idxs: # our indexes cant have anything but our values
                 to_inc |= self.set_index_possibilities(
@@ -505,7 +493,7 @@ class Sudoku (object):
                             not_naked.remove((i1,gl1))
                             not_naked.remove((i2,gl2))
                             naked_groups.append((i2,gl1+gl2))
-                            self.stats.inc(name+'_complex_constraint')
+                            # self.stats.inc(name+'_complex_constraint')
                             return True
                         else:
                             not_naked.remove((i1,gl1))
@@ -519,10 +507,9 @@ class Sudoku (object):
         # used up in the naked set, might as well remove them
         # from everyone elses possibilities
         for not_pos,gl in naked_groups:
-            for cell in free_list:
-                if not cell in gl:
-                    if self.remove_index_possibilities(cell,not_pos):
-                        self.stats.inc(name+'_contraint')
+            for cell in set(free_list)-set(gl):
+                if self.remove_index_possibilities(cell,not_pos):
+                    self.stats.inc(name+'_contraint')
         return pos
         
     def naked_sets_exclusion_in_col(self,pos,idx):
