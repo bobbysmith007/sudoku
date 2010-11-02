@@ -167,22 +167,23 @@ class Sudoku (object):
             self.unique_possibility_in_col,
             self.unique_possibility_in_square,
 
+
             # These seem to be not constraing over the others
             # self.squeeze_col, self.squeeze_row,
 
             ]
         def run_set_constraints():
-            for j in PIDXS:
-                idx = Index(0,j)
-                self.xwing_col_constraint(self.index_possibilities(idx),idx)
-                self.set_exclusion_in_col(self.index_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
-
             for i in PIDXS:
                 idx = Index(i,0)
-                self.xwing_row_constraint(self.index_possibilities(idx),idx)
                 self.set_exclusion_in_row(self.index_possibilities(idx),idx)
                 self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.xwing_row_constraint(self.index_possibilities(idx),idx)
+
+            for j in PIDXS:
+                idx = Index(0,j)
+                self.set_exclusion_in_col(self.index_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
+                self.xwing_col_constraint(self.index_possibilities(idx),idx)
 
             for i in range(0,3):
                 for j in range(0,3):
@@ -256,17 +257,18 @@ class Sudoku (object):
             if self.puzzle[i][col] == val: return True
 
     def xwing_col_constraint(self, pos, idx):
-        # buid a collection of row->pos->idxs that pos occurs
+        # buid a collection of row->possibility->number of times that
+        # possibility occurs
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            row=posCounts[i.row]
             for val in self.index_possibilities(i):
-                row[val-1].idxs.append(i)
+                posCounts[i.row][val-1].idxs.append(i)
+        p = deepcopy(pos)
 
         #for all of the values in my square, check to see
         # if an xwing removes counts
-        for val in list(pos):
+        for val in p:
             i1=None
             i2=None
             for i in PIDXS:
@@ -298,11 +300,11 @@ class Sudoku (object):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            col = posCounts[i.col]
-            for val in self.index_possibilities(i):
-                col[val-1].idxs.append(i)
+            for val in self.index_possibilities(idx):
+                posCounts[i.col][val-1].idxs.append(i)
+        p = deepcopy(pos)
 
-        for val in list(pos):
+        for val in p:
             j1=None
             j2=None
             for j in PIDXS:
