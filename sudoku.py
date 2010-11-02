@@ -507,31 +507,6 @@ class Sudoku (object):
                             return True
                 ahead +=1
         while(fn()):pass
-
-        # I DONT THINK THIS SHOULD EVER BE HIT IF WE DID OUR OTHER SET
-        # EXCLUSION CORRECTLY
-        #
-        # Look for hidden sets if we find one, turn it into a naked set
-        # and pass it on
-        for vals, idxs in not_naked:
-            if not len(vals)>len(idxs): continue
-            others = set(free_list)-set(idxs)
-            if len(others)==0: continue
-            #smallest subset of hidden
-            x = set.intersection(*map(self.index_possibilities,idxs))
-            y = set.union(*map(self.index_possibilities, others))
-            if not x.isdisjoint(y) or len(vals-(x|y)) != 0:continue
-            if len(idxs)==2:
-                if len(x) == len(idxs) :
-                    #print "Not",vals,\
-                    #    [(idx, self.index_possibilities(idx))for idx in idxs]\
-                    #    ,"\n ",x,y,x.isdisjoint(y),free_list
-                    #print self.print_help()
-                    for idx in idxs:
-                        if self.remove_index_possibilities(idx, vals-x):
-                            self.stats.inc('nuded_a_set')
-                    naked_groups.append((x,idxs))
-                    not_naked.remove((vals, idxs))
         
         # if we know these possiblities are being
         # used up in the naked set, might as well remove them
