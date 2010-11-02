@@ -213,16 +213,16 @@ class Sudoku (object):
             return self._constrained_this_cycle
         while(fn()): pass
         
-    def free_in_row(self, row):
+    def free_in_row(self, idx_in):
         return [idx 
                 for j in PIDXS
-                for idx in [Index(row,j)]
+                for idx in [Index(idx_in.row,j)]
                 if not self.square_solved(idx)]
 
-    def free_in_col(self, col):
+    def free_in_col(self, idx_in):
         return [idx
                 for i in PIDXS
-                for idx in [Index(i,col)]
+                for idx in [Index(i,idx_in.col)]
                 if not self.square_solved(idx)]
 
     def free_in_square(self, idx_in):
@@ -231,7 +231,7 @@ class Sudoku (object):
                 if not self.square_solved(idx)]
 
     def free_related_cells(self, idx):
-        return self.free_in_row(idx.row)+self.free_in_col(idx.col)+self.free_in_square(idx)
+        return self.free_in_row(idx)+self.free_in_col(idx)+self.free_in_square(idx)
 
     def free_related_possibilities(self, idx):
         return [self.index_possibilities(i)
@@ -254,7 +254,7 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def xwing_row_constraint(self, pos, idx):
+    def xwing_col_constraint(self, pos, idx):
         # buid a collection of row->possibility->number of times that
         # possibility occurs
         posCounts = [[PosCount(v) for v in PVALS]
@@ -286,12 +286,17 @@ class Sudoku (object):
                 # not relevant to me
                 if c1.col!=idx.col and c2.col!=idx.col: continue 
                 # we have an xwing square
-                pos = pos - set([val])
-                if self.remove_index_possibilities(idx,set([val])):
-                    self.stats.inc('xwing_row')
+                sv = set([val])
+                pos = pos - sv
+                if self.remove_index_possibilities(idx,sv):
+                    self.stats.inc('xwing_col')
+                others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([idx,c1,c2,c3,c4])
+                for o in others:
+                    if self.remove_index_possibilities(o,sv):
+                        self.stats.inc('xwing_col')
         return pos
 
-    def xwing_col_constraint(self, pos, idx):
+    def xwing_row_constraint(self, pos, idx):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
@@ -315,9 +320,14 @@ class Sudoku (object):
                 if c1.row!=idx.row and c3.row!=idx.row: continue # not relevant to me
 
                 # we have an xwing square
-                pos = pos - set([val])
-                if self.remove_index_possibilities(idx,set([val])):
-                    self.stats.inc('xwing_col')
+                sv = set([val])
+                pos = pos - sv
+                if self.remove_index_possibilities(idx,sv):
+                    self.stats.inc('xwing_row')
+                others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([idx,c1,c2,c3,c4])
+                for o in others:
+                    if self.remove_index_possibilities(o,sv):
+                        self.stats.inc('xwing_row')
         return pos
 
     def squeeze_col(self, pos, idx):
@@ -367,12 +377,12 @@ class Sudoku (object):
         """ constrain possibilities by crosshatching
         http://www.chessandpoker.com/sudoku-strategy-guide.html
         """
-        cells = self.free_in_row(idx.row)
+        cells = self.free_in_row(idx)
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_row')
 
     def unique_possibility_in_col(self,pos,idx):
-        cells = self.free_in_col(idx.col)
+        cells = self.free_in_col(idx)
         cells.remove(idx)
         return self._unique_possibility_helper(cells, pos, 'unique_in_col')
 
@@ -448,11 +458,11 @@ class Sudoku (object):
         return pos
 
     def set_exclusion_in_col(self,pos,idx):
-        fic = self.free_in_col(idx.col)
+        fic = self.free_in_col(idx)
         return self._sets_helper(fic,pos,'sets_col_constraint')
 
     def set_exclusion_in_row(self,pos,idx):
-        fic = self.free_in_row(idx.row)
+        fic = self.free_in_row(idx)
         return self._sets_helper(fic,pos,'sets_row_constraint')
 
     def set_exclusion_in_square(self,pos,idx):
@@ -507,11 +517,11 @@ class Sudoku (object):
         return pos
         
     def naked_sets_exclusion_in_col(self,pos,idx):
-        fic = self.free_in_col(idx.col)
+        fic = self.free_in_col(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_col')
 
     def naked_sets_exclusion_in_row(self,pos,idx):
-        fic = self.free_in_row(idx.row)
+        fic = self.free_in_row(idx)
         return self._naked_sets_helper(fic,pos,'naked_sets_row')
 
     def naked_sets_exclusion_in_square(self,pos,idx):
