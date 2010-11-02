@@ -173,17 +173,17 @@ class Sudoku (object):
 
             ]
         def run_set_constraints():
-            for i in PIDXS:
-                idx = Index(i,0)
-                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
-                self.xwing_row_constraint(self.index_possibilities(idx),idx)
-
             for j in PIDXS:
                 idx = Index(0,j)
+                self.xwing_col_constraint(self.index_possibilities(idx),idx)
                 self.set_exclusion_in_col(self.index_possibilities(idx),idx)
                 self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
-                self.xwing_col_constraint(self.index_possibilities(idx),idx)
+
+            for i in PIDXS:
+                idx = Index(i,0)
+                self.xwing_row_constraint(self.index_possibilities(idx),idx)
+                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
 
             for i in range(0,3):
                 for j in range(0,3):
@@ -193,11 +193,11 @@ class Sudoku (object):
             
         def fn():
             self._constrained_this_cycle = False
+            self.stats.constraint_steps+=1
             for cons in constraints:
                 # copy the set so we can remove the currently
                 # inspected index if nec
                 for idx in list(self.unsolved_idxs):
-                    self.stats.constraint_steps+=1
                     if self.square_solved(idx): 
                         self.unsolved_idxs.remove(idx)
                         continue
@@ -264,68 +264,67 @@ class Sudoku (object):
         for i in self.unsolved_idxs:
             for val in self.index_possibilities(i):
                 posCounts[i.row][val-1].idxs.append(i)
-        p = deepcopy(pos)
 
-        #for all of the values in my square, check to see
-        # if an xwing removes counts
-        for val in p:
-            i1=None
-            i2=None
-            for i in PIDXS:
-                # 2 cells share this possibility
-                if len(posCounts[i][val-1])==2: 
-                    if i1: i2=i
-                    else: i1=i
-            if i1 and i2: 
-                # two rows contain two cells in the 
-                # same two columns with the same set of two possibilities 
-                c1,c2 = posCounts[i1][val-1].idxs
-                c3,c4 = posCounts[i2][val-1].idxs
-                if c1.col>c2.col: c1,c2 = c2,c1 
-                if c3.col>c4.col: c3,c4 = c4,c3
-                # not an xwing square, columns didnt match
-                if c1.col!=c3.col or c2.col!=c4.col: continue 
-                # not relevant to me
-                if c1.col!=idx.col and c2.col!=idx.col: continue 
-                # we have an xwing square
-                sv = set([val])
-                pos = pos - sv
-                others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([c1,c2,c3,c4])
-                for o in others:
-                    if self.remove_index_possibilities(o,sv):
-                        self.stats.inc('xwing_col')
+        gen = ((i1,i2,val)
+               for i1 in PIDXS
+               for i2 in range(i1+1,len(PIDXS))
+               for val in PVALS
+               if len(posCounts[i1][val-1])==2 and 
+                  len(posCounts[i2][val-1])==2)
+
+        #two cells that share value values in two rows to make a square
+        for i1,i2,val in gen:
+            # two rows contain two cells in the 
+            # same two columns with the same set of two possibilities 
+            c1,c2 = posCounts[i1][val-1].idxs
+            c3,c4 = posCounts[i2][val-1].idxs
+            if c1.col>c2.col: c1,c2 = c2,c1 
+            if c3.col>c4.col: c3,c4 = c4,c3
+            if c1.row!=c2.row or c3.row != c4.row or \
+                    c1.col!=c3.col or c2.col!=c4.col: continue  # not an xwing square
+            # not relevant to me
+            # if c1.col!=idx.col and c2.col!=idx.col: continue 
+            #print "XWING ",c1,c2,c3,c4,"\n",self.print_help()
+            # we have an xwing square
+            sv = set([val])
+            pos = pos - sv
+            others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([c1,c2,c3,c4])
+            for o in others:
+                if self.remove_index_possibilities(o,sv):
+                    self.stats.inc('xwing_col')
         return pos
 
     def xwing_row_constraint(self, pos, idx):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilities(idx):
+            for val in self.index_possibilities(i):
                 posCounts[i.col][val-1].idxs.append(i)
-        p = deepcopy(pos)
 
-        for val in p:
-            j1=None
-            j2=None
-            for j in PIDXS:
-                if len(posCounts[j][val-1])==2: # 2 cells share this pos
-                    if j1: j2=j
-                    else: j1=j
-            if j1 and j2:
-                c1,c3 = posCounts[j1][val-1].idxs
-                c2,c4 = posCounts[j2][val-1].idxs
-                if c1.col>c2.col: c1,c2 = c2,c1 
-                if c3.col>c4.col: c3,c4 = c4,c3
-                if c1.col!=c3.col or c2.col!=c4.col: continue  # not an xwing square
-                if c1.row!=idx.row and c3.row!=idx.row: continue # not relevant to me
+        gen = ((j1,j2,val)
+               for j1 in PIDXS
+               for j2 in range(j1+1,len(PIDXS))
+               for val in PVALS
+               if len(posCounts[j1][val-1])==2
+               and len(posCounts[j2][val-1])==2)
 
-                # we have an xwing square
-                sv = set([val])
-                pos = pos - sv
-                others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([c1,c2,c3,c4])
-                for o in others:
-                    if self.remove_index_possibilities(o,sv):
-                        self.stats.inc('xwing_row')
+        #two cells that share a value in two cols to make a square
+        for j1,j2,val in gen:
+            c1,c3 = posCounts[j1][val-1].idxs
+            c2,c4 = posCounts[j2][val-1].idxs
+            if c1.col>c2.col: c1,c2 = c2,c1 
+            if c3.col>c4.col: c3,c4 = c4,c3
+            if c1.row!=c2.row or c3.row != c4.row or \
+                    c1.col!=c3.col or c2.col!=c4.col: continue  # not an xwing square
+            #if c1.row!=idx.row and c3.row!=idx.row: continue # not relevant to me
+            # print "XWING ",c1,c2,c3,c4,"\n",self.print_help()
+            # we have an xwing square
+            sv = set([val])
+            pos = pos - sv
+            others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([c1,c2,c3,c4])
+            for o in others:
+                if self.remove_index_possibilities(o,sv):
+                    self.stats.inc('xwing_row')
         return pos
 
     def squeeze_col(self, pos, idx):
