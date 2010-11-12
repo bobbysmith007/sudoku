@@ -11,10 +11,13 @@ logging.basicConfig(level=logging.INFO)
 PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
 
-def every_combo(inp):
-    for i in range(2,len(inp)):
+are_distinct_sets = lambda x,y:len(x & y)==0
+
+def combo_sets(inp, *lengths):
+    if len(lengths)==0: lengths=reversed(range(2,len(inp)-1))
+    for i in lengths:
         for v in itertools.combinations(inp,i):
-            yield v
+            yield set(v)
 
 class Index (object):
     def __init__(self,row,col):
@@ -111,7 +114,7 @@ class Sudoku (object):
         return c
 
     def open_boxes(self):
-        return sorted([Box(idx,self.index_possibilities(idx))
+        return sorted([Box(idx,self.get_possibilities(idx))
                        for idx in puzzle_range
                        if not self.square_solved(idx)],
                       key=len)
@@ -126,8 +129,8 @@ class Sudoku (object):
                 raise e
         if self.is_solved(): return self
 
-#        logging.info("Couldn't solve board via constraints, %s\nStarting to guess",
-#                     self.print_help())
+        logging.info("Couldn't solve board via constraints, %s\n%s\nStarting to guess",
+                     self, self.print_help())
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
         # otherwise any mistake is enough to backtrack
@@ -177,21 +180,21 @@ class Sudoku (object):
         def run_set_constraints():
             for j in PIDXS:
                 idx = Index(0,j)
-                self.xwing_col_constraint(self.index_possibilities(idx),idx)
-                self.set_exclusion_in_col(self.index_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_col(self.index_possibilities(idx),idx)
+                self.xwing_col_constraint(self.get_possibilities(idx),idx)
+                self.set_exclusion_in_col(self.get_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_col(self.get_possibilities(idx),idx)
 
             for i in PIDXS:
                 idx = Index(i,0)
-                self.xwing_row_constraint(self.index_possibilities(idx),idx)
-                self.set_exclusion_in_row(self.index_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_row(self.index_possibilities(idx),idx)
+                self.xwing_row_constraint(self.get_possibilities(idx),idx)
+                self.set_exclusion_in_row(self.get_possibilities(idx),idx)
+                self.naked_sets_exclusion_in_row(self.get_possibilities(idx),idx)
 
             for i in range(0,3):
                 for j in range(0,3):
                     idx = Index(i*3,j*3)
-                    self.set_exclusion_in_square(self.index_possibilities(idx),idx)
-                    self.naked_sets_exclusion_in_square(self.index_possibilities(idx),idx)
+                    self.set_exclusion_in_square(self.get_possibilities(idx),idx)
+                    self.naked_sets_exclusion_in_square(self.get_possibilities(idx),idx)
             
         def fn():
             self._constrained_this_cycle = False
@@ -203,7 +206,7 @@ class Sudoku (object):
                     if self.square_solved(idx): 
                         self.unsolved_idxs.remove(idx)
                         continue
-                    p = self.index_possibilities(idx)
+                    p = self.get_possibilities(idx)
                     if len(p)==1: self.stats.inc('single_possibility')
                     elif len(p)>1: p = cons(p, idx)
                     # start over reconstraining
@@ -238,7 +241,7 @@ class Sudoku (object):
         return self.free_in_row(idx)+self.free_in_col(idx)+self.free_in_square(idx)
 
     def free_related_possibilities(self, idx):
-        return [self.index_possibilities(i)
+        return [self.get_possibilities(i)
                 for i in self.free_related_cells(idx)
                 if i!=idx]
 
@@ -264,7 +267,7 @@ class Sudoku (object):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilities(i):
+            for val in self.get_possibilities(i):
                 posCounts[i.row][val-1].idxs.append(i)
 
         gen = ((i1,i2,val)
@@ -300,7 +303,7 @@ class Sudoku (object):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
-            for val in self.index_possibilities(i):
+            for val in self.get_possibilities(i):
                 posCounts[i.col][val-1].idxs.append(i)
 
         gen = ((j1,j2,val)
@@ -357,7 +360,7 @@ class Sudoku (object):
     def _unique_possibility_helper(self, cells, pos, name):
         for v in pos:
             not_allowed_elsewhere = \
-                all(not v in self.index_possibilities(i)
+                all(not v in self.get_possibilities(i)
                     for i in cells)
             if not_allowed_elsewhere:
                 self.stats.inc(name)
@@ -390,72 +393,48 @@ class Sudoku (object):
         set of values of equal length, then those values must be 
         in those squares. So remove all other possibilities from
         those cells
-        """
-        # count the possibilities for each free square
-        pcnts = [PosCount(v) for v in PVALS]
-        for idx in free_list:
-            for v in self.index_possibilities(idx):
-                pcnts[v-1].idxs.append(idx)
-
-        # remove any values that are not possible and close this
-        pcnts = Ref(it=[i for i in pcnts if len(i)>1])
-        
-        sets = []
-        # look for sets by looking at every combination
-        # of values, and finding ones that share a common set 
-        # of indexs exclusively
-        def fn():
-            cmbs = every_combo(pcnts.it)
-            for cmb in cmbs:
-                #union all the indexes for the value set we are looking at
-                idxs = set.union(*map(set,cmb)) 
-                vals = set(pcnt.val for pcnt in cmb)
-                others = (set(free_list) - set(idxs))
-
-                # we are looking for boxes that can share a specific set
-                # of values exclusively so we need to be able to put
-                # each value in a box
-                if len(idxs) != len(vals) or len(others)==0: continue
-
-                other_pos = set.union(*[self.index_possibilities(idx)
-                                        for idx in others])
-            
-                # none of our values should be placeable elsewhere
-                set_is_related = all(v not in other_pos 
-                                     for v in vals)
-
-                # trying to pull naked sets into here
-                # idx_pos = [self.index_possibilities(idx)
-                #            for idx in idxs]
-                # fullestpos = max(idx_pos,key=len)
-                # set_is_related |= all(p <= fullestpos
-                #                      for p in idx_pos)
-                
-                # Sanity: none of the values we are 
-                # removing can only be here
-
-                # set_is_related &= all(v in other_pos
-                #                      for i in idxs
-                #                      for v in self.index_possibilities(i)-vals)
-            
-                if set_is_related:
-                    sets.append((vals,idxs))
-                    pcnts.it = [pcnt for pcnt in pcnts.it
-                                if pcnt.val not in vals]
-                    #return True
-        while( len(pcnts.it) > 1 and fn()): pass
-        
-        for vals,idxs in sets:
-            others = (set(free_list) - set(idxs))
+        """      
+        free_list = set(free_list)
+        unused_idxs = Ref(it=free_list)
+        def handle_hidden_set (vals, idxs):
             # constrain the related indexes in the set
+            others = (free_list - idxs)
             to_inc = False
             for idx in idxs: # our indexes cant have anything but our values
                 to_inc |= self.set_index_possibilities(
-                    idx, vals&self.index_possibilities(idx))
+                    idx, vals & self.get_possibilities(idx))
             for idx in others: # other indexes cant have our values
                 to_inc |= self.remove_index_possibilities(idx, vals)
             if to_inc:
                 self.stats.inc(name)
+
+        # look for sets by looking at every combination
+        # of indexes, and finding ones that share a 
+        # common subset of equal length of values
+        watch_idxs = set([Index(1,0),Index(2,0),Index(1,2),Index(2,2)])
+        watch_vals = set([1,2,6,8])
+        def fn():
+            for idxs in combo_sets(unused_idxs.it):
+                idxs = set(idxs)
+                idx_pos = self.get_possibilities(*idxs)
+
+                #indexes not in the subset we are looking at
+                others = (unused_idxs.it - idxs)
+                other_pos = self.get_possibilities(*others)
+
+                # every set of possibilities of the correct
+                # length should be tested to see if they form
+                # a block of numbers that could only be put here
+                pos_sets = combo_sets(idx_pos, len(idxs))
+                for vals in pos_sets:
+                    vals = set(vals)
+                    if watch_vals==vals and watch_idxs==idxs:
+                        print vals, idxs,
+                    if are_distinct_sets(vals, other_pos):
+                        handle_hidden_set(vals,idxs)
+                        unused_idxs.it = unused_idxs.it - idxs
+                        return True
+        while(fn()): pass
         return pos
 
     def set_exclusion_in_col(self,pos,idx):
@@ -471,10 +450,10 @@ class Sudoku (object):
         return self._sets_helper(fic,pos,'sets_square_constraint')
 
     def _naked_sets_helper(self, free_list, pos, name):
-        free_list.sort(key=self.index_possibilities)
+        free_list.sort(key=self.get_possibilities)
         # group free squares by shared possiblity lists
         groups = [(i,gl) 
-                  for i,g in itertools.groupby(free_list, self.index_possibilities)
+                  for i,g in itertools.groupby(free_list, self.get_possibilities)
                   for gl in [list(g)]]
         kfn = lambda x: len(x[0])
         groups.sort(key=kfn)
@@ -548,9 +527,13 @@ class Sudoku (object):
         return self._constrained_this_set
 
     def remove_index_possibilities(self,idx,pos):
-        new_pos = self.index_possibilities(idx)-pos
+        new_pos = self.get_possibilities(idx)-pos
         return self.set_index_possibilities(idx, new_pos)
         
+    def get_possibilities(self, *idxs):
+        return set.union(*[self.index_possibilities(i)
+                           for i in idxs])
+
     def index_possibilities(self,idx):
         if self.possibility_hash.has_key(idx):
             return self.possibility_hash[idx]
@@ -613,7 +596,7 @@ class Sudoku (object):
             s.write('||')
             for j in PIDXS:
                 idx = Index(i,j)
-                pos = self.index_possibilities(idx)
+                pos = self.get_possibilities(idx)
                 for l in PVALS:
                     if l in pos: s.write(l)
                     else: s.write(' ')
@@ -656,7 +639,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles.puzzles
+    puz = puzzles2.puzzles
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
