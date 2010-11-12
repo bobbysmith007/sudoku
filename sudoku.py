@@ -1,5 +1,6 @@
 from StringIO import StringIO
-import re, traceback, types, itertools
+import re, traceback, types
+from itertools import combinations, groupby
 import cProfile, pstats, time
 import logging
 from copy import deepcopy, copy
@@ -16,7 +17,7 @@ are_distinct_sets = lambda x,y:len(x & y)==0
 def combo_sets(inp, *lengths):
     if len(lengths)==0: lengths=reversed(range(2,len(inp)-1))
     for i in lengths:
-        for v in itertools.combinations(inp,i):
+        for v in combinations(inp,i):
             yield set(v)
 
 class Index (object):
@@ -116,7 +117,7 @@ class Sudoku (object):
     def open_boxes(self):
         return sorted([Box(idx,self.get_possibilities(idx))
                        for idx in puzzle_range
-                       if not self.square_solved(idx)],
+                       if not self.index_solved(idx)],
                       key=len)
 
     def search(self):
@@ -152,7 +153,7 @@ class Sudoku (object):
             raise Exception("Puzzle Not Solved...")
         return sol
             
-    def square_solved(self,idx):
+    def index_solved(self,idx):
         return self.puzzle[idx.row][idx.col]
 
     def clear_puzzle_possibility_cache(self):
@@ -162,96 +163,92 @@ class Sudoku (object):
         #self.clear_puzzle_possibility_cache()
         self.puzzle[idx.row][idx.col] = v
         self.set_index_possibilities(idx, set([v]))
-        self.unsolved_idxs.remove(idx)
+        if idx in self.unsolved_idxs:
+            self.unsolved_idxs.remove(idx)
     
     def constrain(self):
         new_constraint = False
 
-        constraints = [
-            self.unique_possibility_in_row,
-            self.unique_possibility_in_col,
-            self.unique_possibility_in_square,
-
-
+        constraints = [self.unique_possibility,
+                       self.hidden_set_exclusions,
+                       self.naked_set_exclusions
+                       ]
             # These seem to be not constraing over the others
             # self.squeeze_col, self.squeeze_row,
 
-            ]
-        def run_set_constraints():
+        def run_constraints():
             for j in PIDXS:
-                idx = Index(0,j)
-                self.xwing_col_constraint(self.get_possibilities(idx),idx)
-                self.set_exclusion_in_col(self.get_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_col(self.get_possibilities(idx),idx)
+                idxs = self.free_in_col(Index(0,j))
+                for fn in constraints:
+                    fn(idxs,'col')
 
             for i in PIDXS:
-                idx = Index(i,0)
-                self.xwing_row_constraint(self.get_possibilities(idx),idx)
-                self.set_exclusion_in_row(self.get_possibilities(idx),idx)
-                self.naked_sets_exclusion_in_row(self.get_possibilities(idx),idx)
+                idxs = self.free_in_row(Index(i,0))
+                for fn in constraints:
+                    fn(idxs,'row')
 
             for i in range(0,3):
                 for j in range(0,3):
-                    idx = Index(i*3,j*3)
-                    self.set_exclusion_in_square(self.get_possibilities(idx),idx)
-                    self.naked_sets_exclusion_in_square(self.get_possibilities(idx),idx)
+                    idxs = self.free_in_square(Index(i*3,j*3))
+                    for fn in constraints:
+                        fn(idxs,'square')
+            self.xwing_col_constraint()
+            self.xwing_row_constraint()
             
         def fn():
             self._constrained_this_cycle = False
             self.stats.constraint_steps+=1
-            for cons in constraints:
-                # copy the set so we can remove the currently
-                # inspected index if nec
-                for idx in list(self.unsolved_idxs):
-                    if self.square_solved(idx): 
+            # copy the set so we can remove the currently
+            # inspected index if nec
+            for idx in list(self.unsolved_idxs):
+                if self.index_solved(idx): 
+                    if idx in self.unsolved_idxs:
                         self.unsolved_idxs.remove(idx)
-                        continue
-                    p = self.get_possibilities(idx)
-                    if len(p)==1: self.stats.inc('single_possibility')
-                    elif len(p)>1: p = cons(p, idx)
-                    # start over reconstraining
-                    if len(p)==1:
-                        for i in self.free_related_cells(idx):
-                            if i == idx: continue                            
-                            self.remove_index_possibilities(i, p)
-                        self.set_puzzle_val(idx,list(p)[0])
-                    elif len(p)==0: raise NoPossibleValues(idx)
-            run_set_constraints()
+                    continue
+                p = self.get_possibilities(idx)
+                if len(p)==1: 
+                    self.stats.inc('single_possibility')
+                    for i in self.free_related_cells(idx):
+                        if i == idx: continue                            
+                        self.remove_index_possibilities(i, p)
+                    self.set_puzzle_val(idx,list(p)[0])
+                elif len(p)==0: raise NoPossibleValues(idx)
+            run_constraints()
             return self._constrained_this_cycle
         while(fn()): pass
         
     def free_in_row(self, idx_in):
-        return [idx 
-                for j in PIDXS
-                for idx in [Index(idx_in.row,j)]
-                if not self.square_solved(idx)]
+        return set([idx 
+                    for j in PIDXS
+                    for idx in [Index(idx_in.row,j)]
+                    if not self.index_solved(idx)])
 
     def free_in_col(self, idx_in):
-        return [idx
-                for i in PIDXS
-                for idx in [Index(i,idx_in.col)]
-                if not self.square_solved(idx)]
+        return set([idx
+                    for i in PIDXS
+                    for idx in [Index(i,idx_in.col)]
+                    if not self.index_solved(idx)])
 
     def free_in_square(self, idx_in):
-        return [idx 
-                for idx in square(idx_in)
-                if not self.square_solved(idx)]
+        return set([idx
+                    for idx in square(idx_in)
+                    if not self.index_solved(idx)])
 
     def free_related_cells(self, idx):
-        return self.free_in_row(idx)+self.free_in_col(idx)+self.free_in_square(idx)
+        return self.free_in_row(idx)| \
+            self.free_in_col(idx)|self.free_in_square(idx)
 
     def free_related_possibilities(self, idx):
-        return [self.get_possibilities(i)
-                for i in self.free_related_cells(idx)
-                if i!=idx]
+        idxs = self.free_related_cells(idx)-set(idx)
+        return self.get_possibilities(*idxs)
 
     def closed_square_row(self, idx):
         return [i for i in square_idxs(idx.row)
-                if self.square_solved(Index(i, idx.col))]
+                if self.index_solved(Index(i, idx.col))]
 
     def closed_square_col(self, idx):
         return [j for j in square_idxs(idx.col)
-                if self.square_solved(Index(idx.row, j))]
+                if self.index_solved(Index(idx.row, j))]
 
     def is_in_row(self, val, row):
         for j in PIDXS: 
@@ -261,7 +258,10 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def xwing_col_constraint(self, pos, idx):
+    def xy_wing(self, pos, idx):
+        pass
+
+    def xwing_col_constraint(self):
         # buid a collection of row->possibility->number of times that
         # possibility occurs
         posCounts = [[PosCount(v) for v in PVALS]
@@ -292,14 +292,13 @@ class Sudoku (object):
             #print "XWING ",c1,c2,c3,c4,"\n",self.print_help()
             # we have an xwing square
             sv = set([val])
-            pos = pos - sv
-            others = (set(self.free_in_col(c1))|set(self.free_in_col(c2)))-set([c1,c2,c3,c4])
+            others = (set(self.free_in_col(c1))|
+                      set(self.free_in_col(c2)))-set([c1,c2,c3,c4])
             for o in others:
                 if self.remove_index_possibilities(o,sv):
                     self.stats.inc('xwing_col')
-        return pos
 
-    def xwing_row_constraint(self, pos, idx):
+    def xwing_row_constraint(self):
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
@@ -325,12 +324,10 @@ class Sudoku (object):
             # print "XWING ",c1,c2,c3,c4,"\n",self.print_help()
             # we have an xwing square
             sv = set([val])
-            pos = pos - sv
             others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([c1,c2,c3,c4])
             for o in others:
                 if self.remove_index_possibilities(o,sv):
                     self.stats.inc('xwing_row')
-        return pos
 
     def squeeze_col(self, pos, idx):
         """ constrain possibilities by squeezing
@@ -357,38 +354,18 @@ class Sudoku (object):
                     return set([v])
         return pos
 
-    def _unique_possibility_helper(self, cells, pos, name):
-        for v in pos:
-            not_allowed_elsewhere = \
-                all(not v in self.get_possibilities(i)
-                    for i in cells)
-            if not_allowed_elsewhere:
-                self.stats.inc(name)
-                return set([v])
-        return pos
+    def unique_possibility(self, cells, name):
+        gen = ((v,cell)
+               for cell in cells
+               for v in self.get_possibilities(cell)
+               for others in [(cells - set([cell]))]
+               if len(others)>0
+               if v not in self.get_possibilities(*others))
+        for v,cell in gen:
+            if(self.set_index_possibilities(cell, set([v]))):
+                self.stats.inc('unique_possibility_'+ name)
 
-    def unique_possibility_in_square(self,pos,idx):
-        """ constrain possibilities by crosshatching
-        http://www.chessandpoker.com/sudoku-strategy-guide.html
-        """
-        cells = self.free_in_square(idx)
-        cells.remove(idx)
-        return self._unique_possibility_helper(  cells, pos, 'unique_in_square')
-
-    def unique_possibility_in_row(self,pos,idx):
-        """ constrain possibilities by crosshatching
-        http://www.chessandpoker.com/sudoku-strategy-guide.html
-        """
-        cells = self.free_in_row(idx)
-        cells.remove(idx)
-        return self._unique_possibility_helper(cells, pos, 'unique_in_row')
-
-    def unique_possibility_in_col(self,pos,idx):
-        cells = self.free_in_col(idx)
-        cells.remove(idx)
-        return self._unique_possibility_helper(cells, pos, 'unique_in_col')
-
-    def _sets_helper(self, free_list, pos, name):
+    def hidden_set_exclusions(self, free_list, name):
         """ If a set of cells are the only cells that can hold a 
         set of values of equal length, then those values must be 
         in those squares. So remove all other possibilities from
@@ -406,7 +383,7 @@ class Sudoku (object):
             for idx in others: # other indexes cant have our values
                 to_inc |= self.remove_index_possibilities(idx, vals)
             if to_inc:
-                self.stats.inc(name)
+                self.stats.inc('hidden_set_exclusions_'+name)
 
         # look for sets by looking at every combination
         # of indexes, and finding ones that share a 
@@ -428,35 +405,22 @@ class Sudoku (object):
                 pos_sets = combo_sets(idx_pos, len(idxs))
                 for vals in pos_sets:
                     vals = set(vals)
-                    if watch_vals==vals and watch_idxs==idxs:
-                        print vals, idxs,
+#                    if watch_vals==vals and watch_idxs==idxs:
+#                        print vals, idxs,
                     if are_distinct_sets(vals, other_pos):
                         handle_hidden_set(vals,idxs)
                         unused_idxs.it = unused_idxs.it - idxs
                         return True
         while(fn()): pass
-        return pos
 
-    def set_exclusion_in_col(self,pos,idx):
-        fic = self.free_in_col(idx)
-        return self._sets_helper(fic,pos,'sets_col_constraint')
-
-    def set_exclusion_in_row(self,pos,idx):
-        fic = self.free_in_row(idx)
-        return self._sets_helper(fic,pos,'sets_row_constraint')
-
-    def set_exclusion_in_square(self,pos,idx):
-        fic = self.free_in_square(idx)
-        return self._sets_helper(fic,pos,'sets_square_constraint')
-
-    def _naked_sets_helper(self, free_list, pos, name):
-        free_list.sort(key=self.get_possibilities)
+    def naked_set_exclusions(self, free_list, name):
+        s = sorted(free_list,key=self.get_possibilities)
         # group free squares by shared possiblity lists
-        groups = [(i,gl) 
-                  for i,g in itertools.groupby(free_list, self.get_possibilities)
-                  for gl in [list(g)]]
         kfn = lambda x: len(x[0])
-        groups.sort(key=kfn)
+        groups = sorted(((i,list(g))
+                         for i,g in groupby(s, self.get_possibilities)),
+                        key=kfn)
+
         naked_groups=[]
         not_naked = []
         for i1, gl1 in groups:
@@ -491,23 +455,10 @@ class Sudoku (object):
         # used up in the naked set, might as well remove them
         # from everyone elses possibilities
         for not_pos,gl in naked_groups:
-            for cell in set(free_list)-set(gl):
+            for cell in free_list-set(gl):
                 if self.remove_index_possibilities(cell,not_pos):
-                    self.stats.inc(name+'_contraint')
-        return pos
+                    self.stats.inc('naked_set_exclusions_'+name)
         
-    def naked_sets_exclusion_in_col(self,pos,idx):
-        fic = self.free_in_col(idx)
-        return self._naked_sets_helper(fic,pos,'naked_sets_col')
-
-    def naked_sets_exclusion_in_row(self,pos,idx):
-        fic = self.free_in_row(idx)
-        return self._naked_sets_helper(fic,pos,'naked_sets_row')
-
-    def naked_sets_exclusion_in_square(self,pos,idx):
-        fic = self.free_in_square(idx)
-        return self._naked_sets_helper(fic,pos,'naked_sets_square')
-
     def index_constraints(self,idx):
         knowns = set()
         for i in PIDXS: knowns.add( self.puzzle[i][idx.col] )
@@ -521,6 +472,8 @@ class Sudoku (object):
         if len(pos) == 0: raise NoPossibleValues(idx)
         old = self.possibility_hash.get(idx,set())
         self.possibility_hash[idx] = pos
+#        if len(pos) == 1 and not self.index_solved(idx):
+#            self.set_puzzle_val(idx,list(pos)[0])
         if old!=pos: 
             self._constrained_this_cycle=True
             self._constrained_this_set = True
@@ -531,13 +484,14 @@ class Sudoku (object):
         return self.set_index_possibilities(idx, new_pos)
         
     def get_possibilities(self, *idxs):
-        return set.union(*[self.index_possibilities(i)
-                           for i in idxs])
+        if len(idxs)==0: return set([])
+        sets = [self.index_possibilities(i) for i in idxs]
+        return set.union(*sets)
 
     def index_possibilities(self,idx):
         if self.possibility_hash.has_key(idx):
             return self.possibility_hash[idx]
-        v = self.square_solved(idx)
+        v = self.index_solved(idx)
         if v: return set([v])
         pos = PVALS - self.index_constraints(idx)
         self.set_index_possibilities(idx, pos)
@@ -545,7 +499,7 @@ class Sudoku (object):
 
     def is_solved(self):
         for i in puzzle_range: 
-            if not self.square_solved(i): return False
+            if not self.index_solved(i): return False
         return self
 
     def status(self):
@@ -576,7 +530,7 @@ class Sudoku (object):
             s.write('|')
             for j in PIDXS:
                 s.write(' ')
-                if self.square_solved(Index(i,j)): s.write(self.puzzle[i][j])
+                if self.index_solved(Index(i,j)): s.write(self.puzzle[i][j])
                 else: s.write( '.' )
                 s.write(' ')
                 if j%3==2: s.write('|')
@@ -639,7 +593,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles2.puzzles
+    puz = puzzles.puzzles
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
