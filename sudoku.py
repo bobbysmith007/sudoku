@@ -12,10 +12,11 @@ logging.basicConfig(level=logging.INFO)
 PVALS = set(range(1,10))
 PIDXS = set(range(0,9))
 
-are_distinct_sets = lambda x,y:len(x & y)==0
+def are_distinct_sets (x,y):
+    return len(x & y)==0
 
 def combo_sets(inp, *lengths):
-    if len(lengths)==0: lengths=reversed(range(2,len(inp)-1))
+    if len(lengths)==0: lengths=range(2,len(inp)-1)
     for i in lengths:
         for v in combinations(inp,i):
             yield set(v)
@@ -352,7 +353,8 @@ class Sudoku (object):
             # print "XWING ",c1,c2,c3,c4,"\n",self.print_help()
             # we have an xwing square
             sv = set([val])
-            others = (set(self.free_in_row(c1))|set(self.free_in_row(c3)))-set([c1,c2,c3,c4])
+            others = ( self.free_in_row(c1) | self.free_in_row(c3)) - \
+                set([c1,c2,c3,c4])
             for o in others:
                 if self.remove_index_possibilities(o,sv):
                     self.stats.inc('xwing_row')
@@ -416,8 +418,6 @@ class Sudoku (object):
         # look for sets by looking at every combination
         # of indexes, and finding ones that share a 
         # common subset of equal length of values
-        watch_idxs = set([Index(1,0),Index(2,0),Index(1,2),Index(2,2)])
-        watch_vals = set([1,2,6,8])
         def fn():
             for idxs in combo_sets(unused_idxs.it):
                 idxs = set(idxs)
@@ -433,12 +433,10 @@ class Sudoku (object):
                 pos_sets = combo_sets(idx_pos, len(idxs))
                 for vals in pos_sets:
                     vals = set(vals)
-#                    if watch_vals==vals and watch_idxs==idxs:
-#                        print vals, idxs,
                     if are_distinct_sets(vals, other_pos):
                         handle_hidden_set(vals,idxs)
-                        unused_idxs.it = unused_idxs.it - idxs
-                        return True
+                        # unused_idxs.it = unused_idxs.it - idxs
+                        # return True
         while(fn()): pass
 
     def naked_set_exclusions(self, free_list, name):
@@ -624,7 +622,7 @@ def solve_some_puzzles():
         total_time += ptime
         print "Done with puzzle %s in %s sec" % (i, ptime)
         i+=1
-    print "Done with %d puzzles in %s sec:\n  TOTALS:\n%s" % \
+    print "\n -- TOTALS -- \nDone with %d puzzles in %s sec:\n%s" % \
         (len(puz), total_time, stats)
 
      
