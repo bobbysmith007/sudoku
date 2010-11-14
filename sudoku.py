@@ -215,6 +215,7 @@ class Sudoku (object):
                         fn(idxs,'square')
             self.xwing_col_constraint()
             self.xwing_row_constraint()
+            self.xy_wing()
             
         def fn():
             self._constrained_this_cycle = False
@@ -279,17 +280,30 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
+    
+
     def xy_wing(self):
-        pass
-#        for (c1,c2,c3) in combo_sets(self.unsolved_idxs, 3):
-#            p1,p2,p3 = self.get_possibilities(c1), \
-#                self.get_possibilities(c2), \
-#                self.get_possibilities(c3)
-#            if c1 in self.free_related_cells(c2) and \
-#                    c1 in self.free_related_cells(c3) and \
-#                    len(p1)==2 and len(p2)==2 and len(p3)==2 and \
-                    
-                   
+        free = lambda x:self.free_related_cells(x)
+        pos = lambda x:self.get_possibilities(x)
+        xy_links = (((i1,i2,i3),p1&p3)
+                    for i1 in self.unsolved_idxs
+                    for p1 in [pos(i1)]
+                    for i2 in free(i1)-set([i1])
+                    for p2 in [pos(i2)]
+                    for i3 in free(i2)-set([i1,i2])
+                    for p3 in [pos(i3)]
+                    if len(p1) == 2 and len(p2)==2 and len(p3)==2
+                    and len(p1&p2)==1 and len(p2&p3)==1 and len(p1&p3)==1
+                    and len(p1&p2&p3)==0)
+        for (i1,i2,i3) , sharedv in xy_links:
+            # the related nodes that i1 and i3 share that 
+            # are not in the link
+            to_notify = (free(i1)&free(i3))-set([i1,i2,i3])
+            logging.debug("XYWing%s: removing %s from %s\n%s"%
+                          ((i1,i2,i3) ,sharedv,to_notify, self.print_help()))
+            for i in to_notify:
+                if self.remove_index_possibilities(i,sharedv):
+                    self.stats.inc('xy-wing')
 
     def xwing_col_constraint(self):
         # buid a collection of row->possibility->number of times that
