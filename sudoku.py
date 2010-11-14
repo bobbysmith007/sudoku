@@ -84,11 +84,30 @@ class Ref (object):
         for k,v in kws.items():
             setattr(self, k, v)
 
-class Stats (Ref):
+class Stats (object):
     def __init__(self,**kws):
-        Ref.__init__(self, **kws)
+        for k,v in kws.items():
+            setattr(self, k, v)
+
     def inc(self,k,v=1):
-        return setattr(self, k, getattr(self,k,0)+v)
+        if isinstance(k, Stats):
+            for k,v in vars(k).items():
+                self.inc(k,v)
+        else:
+            return setattr(self, k, getattr(self,k,0)+v)
+
+    def __str__ (self):
+        s = StringIO()
+        stats = deepcopy(vars(self))
+        del stats['constraint_steps']
+        del stats['puzzle_branches']
+        s.write("  %s - Constraint Cycles\n" % self.constraint_steps)
+        s.write("  %s - Branches\n\n" % self.puzzle_branches)
+        items = stats.items()
+        items.sort()
+        for k,v in items:
+            s.write('  %s : %s \n' % (k,v))
+        return s.getvalue()
 
 class Sudoku (object):
     def __init__(self, puzzle, parent=None, depth=1,
@@ -258,8 +277,17 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def xy_wing(self, pos, idx):
+    def xy_wing(self):
         pass
+#        for (c1,c2,c3) in combo_sets(self.unsolved_idxs, 3):
+#            p1,p2,p3 = self.get_possibilities(c1), \
+#                self.get_possibilities(c2), \
+#                self.get_possibilities(c3)
+#            if c1 in self.free_related_cells(c2) and \
+#                    c1 in self.free_related_cells(c3) and \
+#                    len(p1)==2 and len(p2)==2 and len(p3)==2 and \
+                    
+                   
 
     def xwing_col_constraint(self):
         # buid a collection of row->possibility->number of times that
@@ -508,18 +536,8 @@ class Sudoku (object):
             s.write('Solved Puzzle: \n')
         else:
             s.write('Unsolved Puzzle:\n')
-        stats = deepcopy(vars(self.stats))
-        del stats['constraint_steps']
-        del stats['puzzle_branches']
-        s.write("  %s - Constraint Cycles\n" % self.stats.constraint_steps)
-        s.write("  %s - Branches\n\n" % self.stats.puzzle_branches)
-        items = stats.items()
-        items.sort()
-        for k,v in items:
-            s.write('  %s : %s \n' % (k,v))
-        s = s.getvalue()
-        #logging.info(s)
-        return s
+        s.write(str(self.stats))
+        return s.getvalue()
 
     def __str__(self):
         s = StringIO()
@@ -594,17 +612,20 @@ def solve_some_puzzles():
     i = 1
     total_time = 0
     puz = puzzles.puzzles
+    stats = Stats()
     for p in puz :
         print "Starting puzzle %s" % i
         p = read_puzzle(p)
         p.start = time.time()
         s = solve_puzzle(p)
+        stats.inc(s.stats)
         print s
         ptime = time.time()-p.start
         total_time += ptime
         print "Done with puzzle %s in %s sec" % (i, ptime)
         i+=1
-    print "Done with %d puzzles in %s sec" % (len(puz), total_time)
+    print "Done with %d puzzles in %s sec:\n  TOTALS:\n%s" % \
+        (len(puz), total_time, stats)
 
      
 if __name__ == "__main__":
