@@ -150,7 +150,7 @@ class Sudoku (object):
                 raise e
         if self.is_solved(): return self
 
-        logging.info("Couldn't solve board via constraints, %s\n%s\nStarting to guess",
+        logging.debug("Couldn't solve board via constraints, %s\n%s\nStarting to guess",
                      self, self.print_help())
         # really only care about the first open box as it WILL be one
         # of the values there if our model is correct up till now
@@ -189,12 +189,13 @@ class Sudoku (object):
     def constrain(self):
         new_constraint = False
 
-        constraints = [self.unique_possibility,
-                       self.hidden_set_exclusions,
-                       self.naked_set_exclusions
-                       ]
+        constraints = [
+            self.unique_possibility,
+            self.set_exclusions,
+            ]
             # These seem to be not constraing over the others
             # self.squeeze_col, self.squeeze_row,
+            # self.naked_set_exclusions
 
         def run_constraints():
             for j in PIDXS:
@@ -395,7 +396,7 @@ class Sudoku (object):
             if(self.set_index_possibilities(cell, set([v]))):
                 self.stats.inc('unique_possibility_'+ name)
 
-    def hidden_set_exclusions(self, free_list, name):
+    def set_exclusions(self, free_list, name):
         """ If a set of cells are the only cells that can hold a 
         set of values of equal length, then those values must be 
         in those squares. So remove all other possibilities from
@@ -403,7 +404,7 @@ class Sudoku (object):
         """      
         free_list = set(free_list)
         unused_idxs = Ref(it=free_list)
-        def handle_hidden_set (vals, idxs):
+        def handle_set (vals, idxs):
             # constrain the related indexes in the set
             others = (free_list - idxs)
             to_inc = False
@@ -413,31 +414,28 @@ class Sudoku (object):
             for idx in others: # other indexes cant have our values
                 to_inc |= self.remove_index_possibilities(idx, vals)
             if to_inc:
-                self.stats.inc('hidden_set_exclusions_'+name)
+                self.stats.inc('set_exclusions_'+name)
+            return to_inc
 
         # look for sets by looking at every combination
         # of indexes, and finding ones that share a 
         # common subset of equal length of values
-        def fn():
-            for idxs in combo_sets(unused_idxs.it):
-                idxs = set(idxs)
-                idx_pos = self.get_possibilities(*idxs)
+        for idxs in combo_sets(unused_idxs.it):
+            idxs = set(idxs)
+            idx_pos = self.get_possibilities(*idxs)
+            
+            #indexes not in the subset we are looking at
+            others = (unused_idxs.it - idxs)
+            other_pos = self.get_possibilities(*others)
 
-                #indexes not in the subset we are looking at
-                others = (unused_idxs.it - idxs)
-                other_pos = self.get_possibilities(*others)
-
-                # every set of possibilities of the correct
-                # length should be tested to see if they form
-                # a block of numbers that could only be put here
-                pos_sets = combo_sets(idx_pos, len(idxs))
-                for vals in pos_sets:
-                    vals = set(vals)
-                    if are_distinct_sets(vals, other_pos):
-                        handle_hidden_set(vals,idxs)
-                        # unused_idxs.it = unused_idxs.it - idxs
-                        # return True
-        while(fn()): pass
+            # every set of possibilities of the correct length should
+            # be tested to see if they form a block of numbers that
+            # could only be put here
+            pos_sets = combo_sets(idx_pos, len(idxs))
+            for vals in pos_sets:
+                vals = set(vals)
+                if are_distinct_sets(vals, other_pos):
+                    handle_set(vals,idxs)
 
     def naked_set_exclusions(self, free_list, name):
         s = sorted(free_list,key=self.get_possibilities)
@@ -609,7 +607,7 @@ def solve_puzzle(s):
 def solve_some_puzzles():
     i = 1
     total_time = 0
-    puz = puzzles.puzzles
+    puz = puzzles.puzzles#[8:]
     stats = Stats()
     for p in puz :
         print "Starting puzzle %s" % i
