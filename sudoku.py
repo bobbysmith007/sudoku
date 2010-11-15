@@ -232,7 +232,7 @@ class Sudoku (object):
                         fn(idxs,'square')
             self.xwing_col_constraint()
             self.xwing_row_constraint()
-            self.golden_chain()
+            self.xy_chain()
             # self.xy_wing()
             
         def fn():
@@ -298,10 +298,12 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    def golden_chain_links(self):
+    def xy_chain_links(self):
         """
-        Golden chains are a generalization of the XY-wing strategy
-         An XY-wing is a golden chain len 3
+        XY chains are a generalization of the XY-wing strategy
+         http://www.sudopedia.org/wiki/XY-Chain
+         An XY-wing is a XY-chain len 3
+
 
          Each chain follows these rules: 
           1. it is 3 or more cells long
@@ -350,19 +352,19 @@ class Sudoku (object):
             for i in rec([head]):
                 yield i
 
-    def golden_chain(self):
-        """ This loops over the puzzles golden link chains constraining """
+    def xy_chain(self):
+        """ This loops over the puzzles xy link chains constraining """
         free = lambda x:self.free_related_cells(x)
-        for chain, val in self.golden_chain_links():
+        for chain, val in self.xy_chain_links():
             head,tail = chain[0],chain[-1]
             to_notify = (free(head)&free(tail))-set(chain)
             should_notify = False
             for i in to_notify:
                 if self.remove_index_possibilities(i, val):
-                    self.stats.inc('golden-chain')
+                    self.stats.inc('xy-chain')
                     should_notify = True
             if should_notify:
-                logging.debug("Golden Chain%s: removing %s from %s - %s"%
+                logging.debug("XY Chain%s: removing %s from %s - %s"%
                           (chain ,val, to_notify, map(self.get_possibilities,chain)))
             
 
