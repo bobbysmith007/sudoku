@@ -304,6 +304,10 @@ class Sudoku (object):
          http://www.sudopedia.org/wiki/XY-Chain
          An XY-wing is a XY-chain len 3
 
+         This implementation (based off golden chains pdf) seems to
+         differ from that described on sudopedia, in that my chain is
+         all weak links rather than alternating weak/strong links
+
 
          Each chain follows these rules: 
           1. it is 3 or more cells long
@@ -366,7 +370,19 @@ class Sudoku (object):
             if should_notify:
                 logging.debug("XY Chain%s: removing %s from %s - %s"%
                           (chain ,val, to_notify, map(self.get_possibilities,chain)))
-            
+
+    def x_chain(self):
+        """ 
+        http://www.sudopedia.org/wiki/X-Chain
+        """
+        pass
+
+    def fishy_cycles(self):
+        """ 
+        XWING / Swordfish generalization:
+        http://www.sudopedia.org/wiki/Fishy_Cycle
+        """
+        pass
 
     def xy_wing(self):
         """ 
