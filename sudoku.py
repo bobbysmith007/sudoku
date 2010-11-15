@@ -24,6 +24,8 @@ def combo_sets(inp, *lengths):
 class Index (object):
     def __init__(self,row,col):
         self.row,self.col = row,col
+    def id (self):
+        return self.row*100+self.col
     def __eq__(self, other):
         return self.row == other.row and self.col == other.col
     def __str__(self):
@@ -31,7 +33,10 @@ class Index (object):
     def __repr__(self):
         return "<%s,%s>"%(self.row, self.col)
     def __hash__(self):
-        return self.row*100+self.col
+        return self.id()
+    def __cmp__(self,other): 
+        #so we can sort
+        return self.id().__cmp__( other.id() )
     def __iter__(self):
         yield self.row
         yield self.col
@@ -215,7 +220,8 @@ class Sudoku (object):
                         fn(idxs,'square')
             self.xwing_col_constraint()
             self.xwing_row_constraint()
-            self.xy_wing()
+            self.golden_chain()
+            # self.xy_wing()
             
         def fn():
             self._constrained_this_cycle = False
@@ -280,30 +286,99 @@ class Sudoku (object):
         for i in PIDXS: 
             if self.puzzle[i][col] == val: return True
 
-    
+    def golden_chain_links(self):
+        """
+        Golden chains are a generalization of the XY-wing strategy
+         An XY-wing is a golden chain len 3
+
+         Each chain follows these rules: 
+          1. it is 3 or more cells long
+          2. each cell contains two possibilities
+          3. each cell is bridged to the next by a value
+             that is different from the previous bridge
+          4. the chain is complete when we get a cell that shares
+             a value with the first that is different from first cells
+             bridge value
+        """
+        free = lambda x:self.free_related_cells(x)
+        pos = lambda x:self.get_possibilities(x)
+        pos_intersect = lambda x: set.intersection(*map(pos,x))
+        head_pos,head_free = None,None
+        def rec(chain, bridge=set() ):
+            tail = chain[-1]
+            tail_pos = pos(tail)
+            # if this cell doesnt contain 2 possibilities
+            if len(tail_pos) != 2: raise StopIteration()
+            if len(chain)>=3: # need three cells for a chain
+                #three consecutive links cannot share a single value:
+                if len(pos_intersect(chain[-3:])) !=0:
+                    raise StopIteration()
+                # the bridge between consecutive cells must be different
+                if pos_intersect(chain[-3:-1]) == pos_intersect(chain[-2:]):
+                    raise StopIteration()
+                chain_val = (head_pos & tail_pos) - bridge
+                first_bridge = head_pos & pos(chain[1])
+                if len(chain_val)==1 and chain_val != first_bridge:
+                    yield (chain, chain_val)
+                    # once a chain ends we are done with that branch, dont keep adding links
+                    # raise StopIteration()
+
+            for new in free(tail) - set(chain):
+                # if new shares a single possibility with tail
+                # then it is a new link in the chain
+                bridge = pos(new)&tail_pos
+                if len(bridge)==1:
+                #and new not in head_free:
+                    for i in rec(chain+[new], bridge):
+                        yield i
+
+        for head in self.unsolved_idxs:
+            head_pos = pos(head)
+            head_free = free(head)
+            for i in rec([head]):
+                yield i
+
+    def golden_chain(self):
+        free = lambda x:self.free_related_cells(x)
+        for chain, val in self.golden_chain_links():
+            head,tail = chain[0],chain[-1]
+            to_notify = (free(head)&free(tail))-set(chain)
+            should_notify = False
+            for i in to_notify:
+                if self.remove_index_possibilities(i, val):
+                    self.stats.inc('golden-chain')
+                    should_notify = True
+            if should_notify:
+                logging.debug("Golden Chain%s: removing %s from %s - %s"%
+                          (chain ,val, to_notify, map(self.get_possibilities,chain)))
+            
 
     def xy_wing(self):
         free = lambda x:self.free_related_cells(x)
         pos = lambda x:self.get_possibilities(x)
+
         xy_links = (((i1,i2,i3),p1&p3)
-                    for i1 in self.unsolved_idxs
-                    for p1 in [pos(i1)]
-                    for i2 in free(i1)-set([i1])
-                    for p2 in [pos(i2)]
-                    for i3 in free(i2)-set([i1,i2])
-                    for p3 in [pos(i3)]
-                    if len(p1) == 2 and len(p2)==2 and len(p3)==2
-                    and len(p1&p2)==1 and len(p2&p3)==1 and len(p1&p3)==1
-                    and len(p1&p2&p3)==0)
-        for (i1,i2,i3) , sharedv in xy_links:
+                     for i1 in self.unsolved_idxs
+                     for p1 in [pos(i1)]
+                     for i2 in free(i1)-set([i1])
+                     for p2 in [pos(i2)]
+                     for i3 in free(i2)-set([i1,i2])
+                     for p3 in [pos(i3)]
+                     if len(p1) == 2 and len(p2)==2 and len(p3)==2
+                     and len(p1&p2)==1 and len(p2&p3)==1 and len(p1&p3)==1
+                     and len(p1&p2&p3)==0)
+        for idxs , sharedv in xy_links:
             # the related nodes that i1 and i3 share that 
             # are not in the link
-            to_notify = (free(i1)&free(i3))-set([i1,i2,i3])
-            logging.debug("XYWing%s: removing %s from %s\n%s"%
-                          ((i1,i2,i3) ,sharedv,to_notify, self.print_help()))
+            to_notify = (free(idxs[0])&free(idxs[-1]))-set(idxs)
+            should_notify = False
             for i in to_notify:
                 if self.remove_index_possibilities(i,sharedv):
                     self.stats.inc('xy-wing')
+                    should_notify = True
+            if(should_notify):
+                logging.debug("XYWing%s: removing %s from %s"%
+                              (idxs ,sharedv,to_notify))
 
     def xwing_col_constraint(self):
         # buid a collection of row->possibility->number of times that
