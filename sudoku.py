@@ -69,6 +69,18 @@ def square_idxs(i):
 def square(idx):
     return cross(square_idxs(idx.row), square_idxs(idx.col))
 
+def share_a_row(*idxs):
+    return all(idx.row==idxs[0].row
+               for idx in idxs[1:])
+
+def share_a_col(*idxs):
+    return all(idx.col==idxs[0].col
+               for idx in idxs[1:])
+
+def share_a_square(*idxs):
+    return all(idx.col/3==idxs[0].col/3 and idx.row/3==idxs[0].row/3
+               for idx in idxs[1:])
+
 class NoPossibleValues(Exception):
     def __init__(self, row=None, col=None):
         self.row,self.col = row,col
@@ -513,8 +525,21 @@ class Sudoku (object):
         free_list = set(free_list)
         unused_idxs = Ref(it=free_list)
         def handle_set (vals, idxs):
-            # constrain the related indexes in the set
-            others = (free_list - idxs)
+            """ constrain the related indexes in the set """
+
+            others = set()
+            # http://www.sudopedia.org/wiki/Locked_Candidates
+            # if the set is locked we can add more others to the list:
+            an_idx = list(idxs)[0]
+
+            if share_a_square(*idxs):
+                others |= self.free_in_square(an_idx)
+            if share_a_col(*idxs):
+                others |= self.free_in_col(an_idx)
+            if share_a_row(*idxs):
+                others |= self.free_in_row(an_idx)
+
+            others = others - idxs
             to_inc = False
             for idx in idxs: # our indexes cant have anything but our values
                 to_inc |= self.set_index_possibilities(
