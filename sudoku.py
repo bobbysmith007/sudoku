@@ -339,6 +339,7 @@ class Sudoku (object):
                 yield i
 
     def golden_chain(self):
+        """ This loops over the puzzles golden link chains constraining """
         free = lambda x:self.free_related_cells(x)
         for chain, val in self.golden_chain_links():
             head,tail = chain[0],chain[-1]
@@ -354,6 +355,10 @@ class Sudoku (object):
             
 
     def xy_wing(self):
+        """ 
+            Implements the XY-wing sudoku strategy 
+            http://www.sudopedia.org/wiki/XY-Wing
+        """
         free = lambda x:self.free_related_cells(x)
         pos = lambda x:self.get_possibilities(x)
 
@@ -381,6 +386,10 @@ class Sudoku (object):
                               (idxs ,sharedv,to_notify))
 
     def xwing_col_constraint(self):
+        """
+        Implements the XWing strategy looking through cols
+        http://www.sudopedia.org/wiki/X-Wing
+        """
         # buid a collection of row->possibility->number of times that
         # possibility occurs
         posCounts = [[PosCount(v) for v in PVALS]
@@ -418,6 +427,10 @@ class Sudoku (object):
                     self.stats.inc('xwing_col')
 
     def xwing_row_constraint(self):
+        """
+        Implements the XWing strategy looking through rows
+        http://www.sudopedia.org/wiki/X-Wing
+        """
         posCounts = [[PosCount(v) for v in PVALS]
                      for i in PIDXS]
         for i in self.unsolved_idxs:
@@ -486,10 +499,16 @@ class Sudoku (object):
                 self.stats.inc('unique_possibility_'+ name)
 
     def set_exclusions(self, free_list, name):
-        """ If a set of cells are the only cells that can hold a 
+        """ 
+        Handles both naked and hidden sets exclusion
+        http://www.sudopedia.org/wiki/Naked_Subset
+        http://www.sudopedia.org/wiki/Hidden_Subset
+
+        If a set of cells are the only cells that can hold a 
         set of values of equal length, then those values must be 
         in those squares. So remove all other possibilities from
-        those cells
+        those cells, and remove our values from all the other 
+        cells in the (col/row/square)
         """      
         free_list = set(free_list)
         unused_idxs = Ref(it=free_list)
@@ -527,6 +546,10 @@ class Sudoku (object):
                     handle_set(vals,idxs)
 
     def naked_set_exclusions(self, free_list, name):
+        """ 
+        This is deprecated code (replaced by sets exclusion) that looks for naked sets
+        http://www.sudopedia.org/wiki/Naked_Subset
+        """
         s = sorted(free_list,key=self.get_possibilities)
         # group free squares by shared possiblity lists
         kfn = lambda x: len(x[0])
