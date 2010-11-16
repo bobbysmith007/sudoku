@@ -81,6 +81,9 @@ def share_a_square(*idxs):
     return all(idx.col/3==idxs[0].col/3 and idx.row/3==idxs[0].row/3
                for idx in idxs[1:])
 
+class ConstrainedThisCycle(Exception):
+    pass
+
 class NoPossibleValues(Exception):
     def __init__(self, row=None, col=None):
         self.row,self.col = row,col
@@ -209,16 +212,20 @@ class Sudoku (object):
                 for j in PIDXS:
                     idxs = self.free_in_col(Index(0,j))
                     constraint(idxs,'col')
+                    if self._constrained_this_cycle: return True
 
                 for i in PIDXS:
                     idxs = self.free_in_row(Index(i,0))
                     constraint(idxs,'row')
+                    if self._constrained_this_cycle: return True
 
                 for i in range(0,3):
                     for j in range(0,3):
                         idxs = self.free_in_square(Index(i*3,j*3))
                         constraint(idxs,'square')
+                        if self._constrained_this_cycle: return True
             return fn
+
         def find_solved_squares():
             self._constrained_this_cycle = False
             # copy the set so we can remove the currently
@@ -242,15 +249,17 @@ class Sudoku (object):
 
         constraints = [
             run_constraints_across_houses(self.unique_possibility),
+            self.squeeze,
             run_constraints_across_houses(self.set_exclusions),
+            self.xy_chain,
             self.xwing_col_constraint,
             self.xwing_row_constraint,
-            self.xy_chain
+
+            # These shouldnt ever produce anything
+            # run_constraints_across_houses(self.naked_set_exclusions),
+            # self.xy_wing,
             ]
-            # These seem to be not constraing over the others
-            # self.squeeze_col, self.squeeze_row,
-            # self.naked_set_exclusions
-            # self.xy_wing()
+            
 
         def run_constraints():
             # Only resort to a higher reasoning 
@@ -509,31 +518,28 @@ class Sudoku (object):
                 if self.remove_index_possibilities(o,sv):
                     self.stats.inc('xwing_row')
 
-    def squeeze_col(self, pos, idx):
-        """ constrain possibilities by squeezing
-        http://www.chessandpoker.com/sudoku-strategy-guide.html
-        """
-        if len(self.closed_square_col(idx))==2: # two closed columns
+    def squeeze(self):
+        """ constrain possibilities by squeezing """
+        def val_in_other_rows (v, idx):
             idxs = square_idxs(idx.row)
             idxs.remove(idx.row)
-            for v in pos:
-                if self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1]):
-                    #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.stats.inc('squeeze_col')
-                    return set([v])
-        return pos
+            return self.is_in_row(v, idxs[0]) and self.is_in_row(v,idxs[1])
 
-    def squeeze_row(self, pos, idx):
-        if len(self.closed_square_row(idx))==2: # two closed rows
+        def val_in_other_cols (v, idx):
             idxs = square_idxs(idx.col)
             idxs.remove(idx.col)
-            for v in pos:
-                if self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1]):
-                    #print "Squeezing <%s,%s> to %s" % (row, col, v)
-                    self.stats.inc('squeeze_row')
-                    return set([v])
-        return pos
+            return self.is_in_col(v, idxs[0]) and self.is_in_col(v,idxs[1])
 
+        gen = ((v,idx)
+               for idx in self.unsolved_idxs
+               for v in self.get_possibilities(idx)
+               if val_in_other_cols(v, idx)
+               and val_in_other_rows(v,idx))
+
+        for v,idx in gen:
+            if self.set_index_possibilities(idx, set([v])):
+                self.stats.inc('squeeze')
+            
     def unique_possibility(self, cells, name):
         gen = ((v,cell)
                for cell in cells
