@@ -204,40 +204,23 @@ class Sudoku (object):
             self.unsolved_idxs.remove(idx)
     
     def constrain(self):
-        new_constraint = False
+        def run_constraints_across_houses(constraint):
+            def fn():
+                for j in PIDXS:
+                    idxs = self.free_in_col(Index(0,j))
+                    constraint(idxs,'col')
 
-        constraints = [
-            self.unique_possibility,
-            self.set_exclusions,
-            ]
-            # These seem to be not constraing over the others
-            # self.squeeze_col, self.squeeze_row,
-            # self.naked_set_exclusions
+                for i in PIDXS:
+                    idxs = self.free_in_row(Index(i,0))
+                    constraint(idxs,'row')
 
-        def run_constraints():
-            for j in PIDXS:
-                idxs = self.free_in_col(Index(0,j))
-                for fn in constraints:
-                    fn(idxs,'col')
-
-            for i in PIDXS:
-                idxs = self.free_in_row(Index(i,0))
-                for fn in constraints:
-                    fn(idxs,'row')
-
-            for i in range(0,3):
-                for j in range(0,3):
-                    idxs = self.free_in_square(Index(i*3,j*3))
-                    for fn in constraints:
-                        fn(idxs,'square')
-            self.xwing_col_constraint()
-            self.xwing_row_constraint()
-            self.xy_chain()
-            # self.xy_wing()
-            
-        def fn():
+                for i in range(0,3):
+                    for j in range(0,3):
+                        idxs = self.free_in_square(Index(i*3,j*3))
+                        constraint(idxs,'square')
+            return fn
+        def find_solved_squares():
             self._constrained_this_cycle = False
-            self.stats.constraint_steps+=1
             # copy the set so we can remove the currently
             # inspected index if nec
             for idx in list(self.unsolved_idxs):
@@ -253,9 +236,43 @@ class Sudoku (object):
                         self.remove_index_possibilities(i, p)
                     self.set_puzzle_val(idx,list(p)[0])
                 elif len(p)==0: raise NoPossibleValues(idx)
-            run_constraints()
             return self._constrained_this_cycle
-        while(fn()): pass
+
+        new_constraint = False
+
+        constraints = [
+            run_constraints_across_houses(self.unique_possibility),
+            run_constraints_across_houses(self.set_exclusions),
+            self.xwing_col_constraint,
+            self.xwing_row_constraint,
+            self.xy_chain
+            ]
+            # These seem to be not constraing over the others
+            # self.squeeze_col, self.squeeze_row,
+            # self.naked_set_exclusions
+            # self.xy_wing()
+
+        def run_constraints():
+            # Only resort to a higher reasoning 
+            # when a lesser reasoning system fails us
+            #
+            # This should allow us to determine when 
+            # a reasoning system is completely subsumed
+            # by a more general one (xy_wing vs xy_chain)
+            self._constrained_this_cycle = False
+            def rec(cons):
+                if len(cons) == 0: return
+                cons[0]()
+                if not self._constrained_this_cycle:
+                    rec(cons[1:])
+            rec(constraints)
+            return self._constrained_this_cycle
+
+        # whenever we are unable to find solved sqares
+        # try running constraints till we succeed then
+        # try solving squares again.  
+        while(find_solved_squares() or run_constraints()):
+            self.stats.constraint_steps+=1
         
     def free_in_row(self, idx_in):
         return set([idx 
@@ -533,6 +550,9 @@ class Sudoku (object):
         Handles both naked and hidden sets exclusion
         http://www.sudopedia.org/wiki/Naked_Subset
         http://www.sudopedia.org/wiki/Hidden_Subset
+
+        also handles locked sets though that is a bit irrelevant
+        as we would have found them anyway on the next pass
 
         If a set of cells are the only cells that can hold a 
         set of values of equal length, then those values must be 

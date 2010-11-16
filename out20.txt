@@ -2,18 +2,10 @@
 Starting puzzle 1
 -------------------------------
 Solved Puzzle: 
-  3 - Constraint Cycles
+  7 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 2 
-  set_exclusions_row : 9 
-  set_exclusions_square : 4 
   single_possibility : 49 
-  unique_possibility_col : 8 
-  unique_possibility_row : 2 
-  unique_possibility_square : 1 
-  xwing_row : 4 
-  xy-chain : 3 
 -------------------------------
 | 4  7  6 | 1  5  3 | 9  2  8 |
 | 3  2  9 | 6  8  7 | 1  4  5 |
@@ -28,23 +20,19 @@ Solved Puzzle:
 | 7  4  2 | 3  9  8 | 6  5  1 |
 -------------------------------
 
-Done with puzzle 1 in 2.88355398178 sec
+Done with puzzle 1 in 0.155559062958 sec
 Starting puzzle 2
 -------------------------------
 Solved Puzzle: 
-  5 - Constraint Cycles
+  14 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 5 
-  set_exclusions_row : 2 
-  set_exclusions_square : 7 
+  set_exclusions_col : 1 
+  set_exclusions_square : 2 
   single_possibility : 50 
-  unique_possibility_col : 13 
-  unique_possibility_row : 6 
-  unique_possibility_square : 5 
-  xwing_col : 2 
-  xwing_row : 1 
-  xy-chain : 10 
+  unique_possibility_col : 6 
+  unique_possibility_row : 4 
+  unique_possibility_square : 3 
 -------------------------------
 | 8  2  6 | 3  5  9 | 7  1  4 |
 | 3  1  5 | 7  2  4 | 9  6  8 |
@@ -59,22 +47,14 @@ Solved Puzzle:
 | 9  8  1 | 6  3  2 | 4  5  7 |
 -------------------------------
 
-Done with puzzle 2 in 4.87054419518 sec
+Done with puzzle 2 in 0.88977098465 sec
 Starting puzzle 3
 -------------------------------
 Solved Puzzle: 
-  3 - Constraint Cycles
+  6 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 6 
-  set_exclusions_row : 16 
-  set_exclusions_square : 3 
   single_possibility : 51 
-  unique_possibility_col : 10 
-  unique_possibility_row : 7 
-  unique_possibility_square : 3 
-  xwing_col : 1 
-  xwing_row : 8 
 -------------------------------
 | 6  8  4 | 2  9  5 | 3  1  7 |
 | 2  7  9 | 3  8  1 | 4  6  5 |
@@ -89,23 +69,17 @@ Solved Puzzle:
 | 7  9  6 | 5  1  4 | 8  2  3 |
 -------------------------------
 
-Done with puzzle 3 in 2.74058508873 sec
+Done with puzzle 3 in 0.158213853836 sec
 Starting puzzle 4
 -------------------------------
 Solved Puzzle: 
-  4 - Constraint Cycles
+  10 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 7 
-  set_exclusions_row : 12 
-  set_exclusions_square : 7 
   single_possibility : 51 
-  unique_possibility_col : 12 
-  unique_possibility_row : 10 
-  unique_possibility_square : 2 
-  xwing_col : 3 
-  xwing_row : 1 
-  xy-chain : 9 
+  unique_possibility_col : 4 
+  unique_possibility_row : 2 
+  unique_possibility_square : 1 
 -------------------------------
 | 3  5  7 | 9  2  4 | 6  1  8 |
 | 6  4  1 | 8  5  3 | 7  2  9 |
@@ -120,22 +94,19 @@ Solved Puzzle:
 | 9  2  3 | 4  1  6 | 8  7  5 |
 -------------------------------
 
-Done with puzzle 4 in 3.92823982239 sec
+Done with puzzle 4 in 0.29696893692 sec
 Starting puzzle 5
 -------------------------------
 Solved Puzzle: 
-  5 - Constraint Cycles
+  19 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_row : 12 
-  set_exclusions_square : 12 
+  set_exclusions_row : 6 
+  set_exclusions_square : 5 
   single_possibility : 59 
-  unique_possibility_col : 6 
-  unique_possibility_row : 7 
-  unique_possibility_square : 15 
-  xwing_col : 2 
-  xwing_row : 3 
-  xy-chain : 3 
+  unique_possibility_col : 11 
+  unique_possibility_row : 10 
+  unique_possibility_square : 5 
 -------------------------------
 | 8  5  9 | 6  1  2 | 4  3  7 |
 | 7  2  3 | 8  5  4 | 1  6  9 |
@@ -150,23 +121,22 @@ Solved Puzzle:
 | 5  9  8 | 7  3  6 | 2  4  1 |
 -------------------------------
 
-Done with puzzle 5 in 4.16858792305 sec
+Done with puzzle 5 in 2.10430717468 sec
 Starting puzzle 6
 -------------------------------
 Solved Puzzle: 
-  55 - Constraint Cycles
+  97 - Constraint Cycles
   21 - Branches
 
-  set_exclusions_col : 23 
-  set_exclusions_row : 40 
-  set_exclusions_square : 60 
-  single_possibility : 198 
-  unique_possibility_col : 40 
-  unique_possibility_row : 46 
-  unique_possibility_square : 40 
-  xwing_col : 6 
-  xwing_row : 15 
-  xy-chain : 57 
+  set_exclusions_col : 4 
+  set_exclusions_row : 1 
+  set_exclusions_square : 4 
+  single_possibility : 251 
+  unique_possibility_col : 26 
+  unique_possibility_row : 35 
+  unique_possibility_square : 23 
+  xwing_row : 6 
+  xy-chain : 27 
 -------------------------------
 | 1  4  5 | 3  2  7 | 6  9  8 |
 | 8  3  9 | 6  5  4 | 1  2  7 |
@@ -181,19 +151,19 @@ Solved Puzzle:
 | 5  2  1 | 8  3  9 | 7  6  4 |
 -------------------------------
 
-Done with puzzle 6 in 47.9517748356 sec
+Done with puzzle 6 in 25.7678070068 sec
 Starting puzzle 7
 -------------------------------
 Solved Puzzle: 
-  57 - Constraint Cycles
+  50 - Constraint Cycles
   27 - Branches
 
   set_exclusions_col : 7 
-  set_exclusions_row : 9 
-  set_exclusions_square : 7 
+  set_exclusions_row : 8 
+  set_exclusions_square : 6 
   single_possibility : 38 
   unique_possibility_col : 7 
-  unique_possibility_row : 3 
+  unique_possibility_row : 2 
 -------------------------------
 | 3  8  4 | 2  6  9 | 5  1  7 |
 | 6  5  9 | 4  1  7 | 2  3  8 |
@@ -208,22 +178,19 @@ Solved Puzzle:
 | 5  6  7 | 8  4  1 | 3  9  2 |
 -------------------------------
 
-Done with puzzle 7 in 191.496234894 sec
+Done with puzzle 7 in 144.883204937 sec
 Starting puzzle 8
 -------------------------------
 Solved Puzzle: 
-  5 - Constraint Cycles
+  19 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_row : 12 
-  set_exclusions_square : 12 
+  set_exclusions_row : 6 
+  set_exclusions_square : 5 
   single_possibility : 59 
-  unique_possibility_col : 6 
-  unique_possibility_row : 7 
-  unique_possibility_square : 15 
-  xwing_col : 2 
-  xwing_row : 3 
-  xy-chain : 3 
+  unique_possibility_col : 11 
+  unique_possibility_row : 10 
+  unique_possibility_square : 5 
 -------------------------------
 | 8  5  9 | 6  1  2 | 4  3  7 |
 | 7  2  3 | 8  5  4 | 1  6  9 |
@@ -238,22 +205,20 @@ Solved Puzzle:
 | 5  9  8 | 7  3  6 | 2  4  1 |
 -------------------------------
 
-Done with puzzle 8 in 4.15843510628 sec
+Done with puzzle 8 in 2.09933304787 sec
 Starting puzzle 9
 -------------------------------
 Solved Puzzle: 
-  18 - Constraint Cycles
+  34 - Constraint Cycles
   6 - Branches
 
-  set_exclusions_col : 4 
-  set_exclusions_row : 15 
-  set_exclusions_square : 12 
-  single_possibility : 63 
-  unique_possibility_col : 15 
-  unique_possibility_row : 11 
+  set_exclusions_row : 3 
+  set_exclusions_square : 5 
+  single_possibility : 65 
+  unique_possibility_col : 11 
+  unique_possibility_row : 8 
   unique_possibility_square : 8 
-  xwing_col : 1 
-  xy-chain : 2 
+  xy-chain : 1 
 -------------------------------
 | 1  2  8 | 5  4  7 | 6  3  9 |
 | 3  4  5 | 8  6  9 | 2  1  7 |
@@ -268,23 +233,20 @@ Solved Puzzle:
 | 2  5  3 | 1  7  8 | 9  6  4 |
 -------------------------------
 
-Done with puzzle 9 in 11.5170149803 sec
+Done with puzzle 9 in 7.94460010529 sec
 Starting puzzle 10
--------------------------------
+^[[B-------------------------------
 Solved Puzzle: 
-  10 - Constraint Cycles
+  26 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 5 
-  set_exclusions_row : 8 
-  set_exclusions_square : 7 
+  set_exclusions_square : 1 
   single_possibility : 57 
-  unique_possibility_col : 14 
-  unique_possibility_row : 13 
-  unique_possibility_square : 3 
-  xwing_col : 1 
+  unique_possibility_col : 12 
+  unique_possibility_row : 11 
+  unique_possibility_square : 7 
   xwing_row : 6 
-  xy-chain : 4 
+  xy-chain : 3 
 -------------------------------
 | 6  2  4 | 5  7  8 | 1  3  9 |
 | 1  3  5 | 4  9  6 | 8  2  7 |
@@ -299,22 +261,17 @@ Solved Puzzle:
 | 3  7  1 | 8  4  9 | 5  6  2 |
 -------------------------------
 
-Done with puzzle 10 in 7.01258397102 sec
+Done with puzzle 10 in 4.45260977745 sec
 Starting puzzle 11
 -------------------------------
 Solved Puzzle: 
-  4 - Constraint Cycles
+  12 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 5 
-  set_exclusions_row : 17 
-  set_exclusions_square : 12 
   single_possibility : 59 
-  unique_possibility_col : 8 
-  unique_possibility_row : 10 
-  unique_possibility_square : 2 
-  xwing_col : 3 
-  xwing_row : 4 
+  unique_possibility_col : 2 
+  unique_possibility_row : 1 
+  unique_possibility_square : 1 
 -------------------------------
 | 7  9  6 | 1  5  2 | 3  8  4 |
 | 5  3  1 | 4  6  8 | 9  2  7 |
@@ -329,23 +286,23 @@ Solved Puzzle:
 | 8  7  3 | 5  2  6 | 4  1  9 |
 -------------------------------
 
-Done with puzzle 11 in 6.27422690392 sec
+Done with puzzle 11 in 0.293977975845 sec
 Starting puzzle 12
 -------------------------------
 Solved Puzzle: 
-  36 - Constraint Cycles
+  75 - Constraint Cycles
   12 - Branches
 
-  set_exclusions_col : 30 
-  set_exclusions_row : 34 
-  set_exclusions_square : 19 
-  single_possibility : 121 
-  unique_possibility_col : 23 
-  unique_possibility_row : 23 
-  unique_possibility_square : 16 
-  xwing_col : 32 
-  xwing_row : 29 
-  xy-chain : 19 
+  set_exclusions_col : 9 
+  set_exclusions_row : 9 
+  set_exclusions_square : 2 
+  single_possibility : 142 
+  unique_possibility_col : 13 
+  unique_possibility_row : 19 
+  unique_possibility_square : 27 
+  xwing_col : 20 
+  xwing_row : 21 
+  xy-chain : 9 
 -------------------------------
 | 1  6  2 | 8  5  7 | 4  9  3 |
 | 5  3  4 | 1  2  9 | 6  7  8 |
@@ -360,22 +317,20 @@ Solved Puzzle:
 | 8  9  7 | 2  6  1 | 3  5  4 |
 -------------------------------
 
-Done with puzzle 12 in 53.4650809765 sec
+Done with puzzle 12 in 40.7215878963 sec
 Starting puzzle 13
 -------------------------------
 Solved Puzzle: 
-  6 - Constraint Cycles
+  14 - Constraint Cycles
   1 - Branches
 
-  set_exclusions_col : 6 
-  set_exclusions_row : 6 
-  set_exclusions_square : 5 
+  set_exclusions_col : 5 
+  set_exclusions_square : 2 
   single_possibility : 53 
-  unique_possibility_col : 13 
-  unique_possibility_row : 12 
-  unique_possibility_square : 1 
-  xwing_row : 4 
-  xy-chain : 6 
+  unique_possibility_col : 6 
+  unique_possibility_row : 3 
+  xwing_row : 2 
+  xy-chain : 9 
 -------------------------------
 | 1  5  2 | 9  3  4 | 6  8  7 |
 | 7  6  3 | 8  2  1 | 5  4  9 |
@@ -390,22 +345,19 @@ Solved Puzzle:
 | 8  9  7 | 6  4  5 | 1  3  2 |
 -------------------------------
 
-Done with puzzle 13 in 6.56511187553 sec
+Done with puzzle 13 in 8.6937019825 sec
 Starting puzzle 14
 -------------------------------
 Solved Puzzle: 
-  8 - Constraint Cycles
+  19 - Constraint Cycles
   2 - Branches
 
-  set_exclusions_col : 7 
-  set_exclusions_row : 6 
-  set_exclusions_square : 4 
+  set_exclusions_col : 2 
+  set_exclusions_square : 3 
   single_possibility : 52 
-  unique_possibility_col : 11 
-  unique_possibility_row : 8 
+  unique_possibility_col : 10 
+  unique_possibility_row : 2 
   unique_possibility_square : 1 
-  xwing_col : 2 
-  xwing_row : 1 
 -------------------------------
 | 3  8  7 | 9  2  6 | 4  1  5 |
 | 5  4  6 | 8  1  3 | 9  7  2 |
@@ -420,23 +372,22 @@ Solved Puzzle:
 | 8  2  9 | 1  6  4 | 3  5  7 |
 -------------------------------
 
-Done with puzzle 14 in 3.61848807335 sec
+Done with puzzle 14 in 1.89029693604 sec
 Starting puzzle 15
 -------------------------------
 Solved Puzzle: 
-  9 - Constraint Cycles
+  20 - Constraint Cycles
   2 - Branches
 
-  set_exclusions_col : 5 
-  set_exclusions_row : 8 
-  set_exclusions_square : 8 
+  set_exclusions_col : 2 
+  set_exclusions_row : 5 
+  set_exclusions_square : 5 
   single_possibility : 56 
-  unique_possibility_col : 15 
-  unique_possibility_row : 7 
-  unique_possibility_square : 3 
-  xwing_col : 7 
+  unique_possibility_col : 4 
+  unique_possibility_row : 4 
+  xwing_col : 4 
   xwing_row : 4 
-  xy-chain : 12 
+  xy-chain : 10 
 -------------------------------
 | 8  6  9 | 5  7  4 | 1  3  2 |
 | 1  2  4 | 3  9  6 | 7  5  8 |
@@ -451,23 +402,18 @@ Solved Puzzle:
 | 6  5  8 | 2  1  3 | 9  4  7 |
 -------------------------------
 
-Done with puzzle 15 in 15.6485490799 sec
+Done with puzzle 15 in 11.4790711403 sec
 Starting puzzle 16
 -------------------------------
 Solved Puzzle: 
-  13 - Constraint Cycles
+  20 - Constraint Cycles
   6 - Branches
 
-  set_exclusions_col : 4 
-  set_exclusions_row : 10 
-  set_exclusions_square : 6 
-  single_possibility : 56 
-  unique_possibility_col : 15 
-  unique_possibility_row : 18 
-  unique_possibility_square : 6 
-  xwing_col : 12 
-  xwing_row : 3 
-  xy-chain : 9 
+  single_possibility : 86 
+  unique_possibility_col : 10 
+  unique_possibility_row : 13 
+  unique_possibility_square : 4 
+  xy-chain : 2 
 -------------------------------
 | 7  9  8 | 6  3  5 | 4  2  1 |
 | 1  2  6 | 9  7  4 | 5  8  3 |
@@ -482,23 +428,21 @@ Solved Puzzle:
 | 2  4  9 | 8  6  1 | 7  3  5 |
 -------------------------------
 
-Done with puzzle 16 in 8.96271204948 sec
+Done with puzzle 16 in 4.49517798424 sec
 Starting puzzle 17
 -------------------------------
 Solved Puzzle: 
-  29 - Constraint Cycles
+  63 - Constraint Cycles
   11 - Branches
 
-  set_exclusions_col : 10 
-  set_exclusions_row : 23 
-  set_exclusions_square : 32 
-  single_possibility : 121 
-  unique_possibility_col : 26 
-  unique_possibility_row : 26 
-  unique_possibility_square : 14 
-  xwing_col : 6 
-  xwing_row : 49 
-  xy-chain : 31 
+  set_exclusions_row : 1 
+  set_exclusions_square : 5 
+  single_possibility : 137 
+  unique_possibility_col : 20 
+  unique_possibility_row : 23 
+  unique_possibility_square : 9 
+  xwing_row : 34 
+  xy-chain : 11 
 -------------------------------
 | 5  9  4 | 8  7  6 | 1  2  3 |
 | 8  2  3 | 9  1  4 | 7  5  6 |
@@ -513,42 +457,42 @@ Solved Puzzle:
 | 2  7  8 | 1  6  9 | 4  3  5 |
 -------------------------------
 
-Done with puzzle 17 in 54.718667984 sec
+Done with puzzle 17 in 44.901774168 sec
 
  -- TOTALS -- 
-Done with 17 puzzles in 429.980391741 sec:
-  270 - Constraint Cycles
+Done with 17 puzzles in 301.227962971 sec:
+  505 - Constraint Cycles
   96 - Branches
 
-  set_exclusions_col : 126 
-  set_exclusions_row : 239 
-  set_exclusions_square : 217 
-  single_possibility : 1193 
-  unique_possibility_col : 242 
-  unique_possibility_row : 216 
-  unique_possibility_square : 135 
-  xwing_col : 80 
-  xwing_row : 135 
-  xy-chain : 168 
+  set_exclusions_col : 30 
+  set_exclusions_row : 39 
+  set_exclusions_square : 45 
+  single_possibility : 1315 
+  unique_possibility_col : 153 
+  unique_possibility_row : 147 
+  unique_possibility_square : 94 
+  xwing_col : 24 
+  xwing_row : 73 
+  xy-chain : 72 
 
-Tue Nov 16 16:44:42 2010    sudoku.v4
+Tue Nov 16 17:16:08 2010    sudoku.v4
 
-         71246670 function calls (70946626 primitive calls) in 430.713 CPU seconds
+         48930453 function calls (48768045 primitive calls) in 302.019 CPU seconds
 
    Ordered by: internal time
-   List reduced from 116 to 10 due to restriction <10>
+   List reduced from 119 to 10 due to restriction <10>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-     6984   75.056    0.011  338.511    0.048 sudoku.py:531(set_exclusions)
- 10764753   60.433    0.000   85.618    0.000 sudoku.py:15(are_distinct_sets)
- 11401123   48.385    0.000   58.482    0.000 sudoku.py:18(combo_sets)
-  8412128   45.262    0.000   69.418    0.000 sudoku.py:35(__hash__)
-  3207904   39.170    0.000  142.371    0.000 sudoku.py:670(index_possibilities)
-13496353/13311322   32.202    0.000   33.096    0.000 {len}
-  3207904   29.012    0.000   65.231    0.000 {method 'has_key' of 'dict' objects}
-  8412128   24.156    0.000   24.156    0.000 sudoku.py:27(id)
-  6672154   20.447    0.000   20.447    0.000 sudoku.py:29(__eq__)
-  1193927   19.557    0.000  164.718    0.000 sudoku.py:665(get_possibilities)
+     4536   53.830    0.012  236.871    0.052 sudoku.py:548(set_exclusions)
+  7655283   44.095    0.000   62.161    0.000 sudoku.py:15(are_distinct_sets)
+  8081695   34.874    0.000   41.823    0.000 sudoku.py:18(combo_sets)
+  5702614   31.547    0.000   48.171    0.000 sudoku.py:35(__hash__)
+  2253673   28.106    0.000  102.646    0.000 sudoku.py:690(index_possibilities)
+9358193/9271472   22.513    0.000   22.936    0.000 {len}
+  2253673   20.656    0.000   46.629    0.000 {method 'has_key' of 'dict' objects}
+  5702614   16.624    0.000   16.624    0.000 sudoku.py:27(id)
+  4606156   14.457    0.000   14.457    0.000 sudoku.py:29(__eq__)
+   749124   13.488    0.000  117.998    0.000 sudoku.py:685(get_possibilities)
 
 
-<module 'sudoku' from 'sudoku.pyc'>
+<module 'sudoku' from 'sudoku.py'>
