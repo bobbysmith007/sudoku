@@ -249,7 +249,7 @@ class Sudoku (object):
 
         constraints = [
             run_constraints_across_houses(self.unique_possibility),
-            self.squeeze,
+            #self.squeeze,
             run_constraints_across_houses(self.set_exclusions),
             self.xy_chain,
             self.xwing_col_constraint,
