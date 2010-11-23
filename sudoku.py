@@ -15,6 +15,21 @@ PIDXS = set(range(0,9))
 def are_distinct_sets (x,y):
     return len(x & y)==0
 
+def alternate(*gs):
+    gens = []
+    for g in gs:
+        if hasattr(g,'next'):
+            gens.append(g)
+        elif hasattr(g,'__iter__'):
+            gens.append(iter(g))
+    while (len(gens)>0):
+        for gen in gens:            
+            try:
+                yield gen.next()
+            except StopIteration,e:
+                gens.remove(gen)
+
+
 def combo_sets(inp, *lengths):
     if len(lengths)==0: lengths=range(2,len(inp)-1)
     for i in lengths:
@@ -390,13 +405,74 @@ class Sudoku (object):
         http://www.sudopedia.org/wiki/X-Chain
         """
         pass
+    
+    def strong_links (self,from_idx):
+        pos = lambda x:self.get_possibilities(x)
+        from_pos = pos(from_idx)
+
+        e=((to, v)
+           for freefn in [self.free_in_square,
+                          self.free_in_col,
+                          self.free_in_row]
+           for freeidxs in [freefn(from_idx)]
+           for to in freeidxs
+           for v in from_pos & pos(to)
+
+           # V can only be in from or to
+           # so it is a strong link
+           if v not in pos(*freeidxs-set([from_idx,to]))
+           
+           )
+        return e
+
+    def weak_links(self, from_idx):
+        pos = lambda x:self.get_possibilities(x)
+        from_pos = pos(from_idx)
+
+        e=((to, v)
+           for freefn in [self.free_in_square,
+                          self.free_in_col,
+                          self.free_in_row]
+           for freeidxs in [freefn(from_idx)]
+           for to in freeidxs
+           for v in from_pos & pos(to)
+           # any cell in a house that shares a value with 
+           # this index is weakly linked
+           )
+        return e
+
+        
+
+    def alternating_chains(self):
+        def links(idx,chain):
+            if len(chain)%2==0 : return self.strong_links(idx)
+            else: return self.weak_links(idx)
+
+        def rec (idx,chain=[]):
+            for link in links(idx,chain):
+                newc = chain+[link]
+                yield newc
+                for chain in rec(link,newc):
+                    yield chain
+            
+        for i in list(self.unsolved_idxs):
+            if self.index_solved(i): continue
+            for chain in rec(i):
+                yield chain
 
     def fishy_cycles(self):
         """ 
         XWING / Swordfish generalization:
         http://www.sudopedia.org/wiki/Fishy_Cycle
         """
-        pass
+        for chain in self.alternating_chains():
+            # look for xwing cycles
+            if len(chain) != 5 or chain[0] != chain[-1] \
+                    or len(set(chain))!=4:
+                continue
+            
+            
+
 
     def xy_wing(self):
         """ 
