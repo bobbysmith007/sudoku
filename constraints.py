@@ -470,7 +470,7 @@ constraintsToRun = [
     xwing_row_constraint,
 
     # These shouldnt ever produce anything
-    # self.squeeze,
-    # run_constraints_across_houses(self.naked_set_exclusions),
-    # self.xy_wing,
+    # squeeze,
+    # run_constraints_across_houses(naked_set_exclusions),
+    # xy_wing,
 ]
