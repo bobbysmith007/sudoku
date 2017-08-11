@@ -1,1 +1,2 @@
-constraints.pyc models.pyc puzzles2.pyc puzzles.pyc sudoku.pyc
+*.pyc
+
