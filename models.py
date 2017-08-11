@@ -124,11 +124,49 @@ class Stats (object):
             s.write('  %s : %s \n' % (k,v))
         return s.getvalue()
 
+
 class ConstrainedThisCycle(Exception):
     pass
+
 
 class NoPossibleValues(Exception):
     def __init__(self, idx=None, data=None):
         self.idx,self.data = idx,data
+
     def __str__(self):
         return "NoPossibleValues for %s:%r" % (self.idx, self.data)
+
+
+class Link(object):
+    def __init__(self, puzzle, from_idx, to_idx, value,
+                 strong=False, possibilities=[]):
+        for k, v in locals():
+            setattr(self, k, v)
+        self.idxs = set([self.from_idx, self.to_idx])
+
+    def same_indexes(self, other):
+        return other.idxs == self.idxs
+
+    def __eq__(self, other):
+        #every strong link is a weak link
+        return self.same_indexes(other) and self.value == other.value
+
+
+class Chain(object):
+    def __init__(self, links=[]):
+        self.links = links
+
+    def push(self, link):
+        self.links.push(link)
+
+    def __iter__(self):
+        for l in self.links:
+            yield l
+
+
+class NiceLoop(Chain):
+    #  http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
+    def __init__(self, puzzle, links=[]):
+        if links[-1].to_idx != links[0].from_idx:
+            raise Exception('Invalid NiceLoop')
+        super(Chain, links)

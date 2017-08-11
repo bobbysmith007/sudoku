@@ -1,4 +1,5 @@
 import logging
+import itertools
 from itertools import combinations, groupby
 import models
 from models import PVALS, PIDXS, square_idxs, \
@@ -160,7 +161,7 @@ def combo_sets(inp, *lengths):
     if len(lengths) == 0:
         lengths = range(2, len(inp) - 1)
     for i in lengths:
-        for v in combinations(inp, i):
+        for v in itertools.combinations(inp, i):
             yield set(v)
 
 
@@ -237,7 +238,7 @@ def naked_set_exclusions(puzzle, free_list, name):
     # group free squares by shared possiblity lists
     kfn = lambda x: len(x[0])
     groups = sorted(((i,list(g))
-                     for i,g in groupby(s, puzzle.get_possibilities)),
+                     for i,g in itertools.groupby(s, puzzle.get_possibilities)),
                     key=kfn)
 
     naked_groups=[]
@@ -360,71 +361,168 @@ def x_chain(puzzle):
     pass
 
 def strong_links (puzzle,from_idx):
-    pos = lambda x:puzzle.get_possibilities(x)
+    def pos(x):
+        puzzle.get_possibilities(x)
+
     from_pos = pos(from_idx)
 
-    e=((to, v)
-       for freefn in [puzzle.free_in_square,
-                      puzzle.free_in_col,
-                      puzzle.free_in_row]
-       for freeidxs in [freefn(from_idx)]
-       for to in freeidxs
-       for v in from_pos & pos(to)
+    e = (models.Link(puzzle, from_idx, to, v, True, from_pos)
+         for freefn in [puzzle.free_in_square,
+                        puzzle.free_in_col,
+                        puzzle.free_in_row]
+         for freeidxs in [freefn(from_idx)]
+         for to in freeidxs
+         for v in from_pos & pos(to)
 
-       # V can only be in from or to
-       # so it is a strong link
-       if v not in pos(*freeidxs-set([from_idx,to]))
-
-       )
+         #  V can only be in from or to
+         #  so it is a strong link
+         if v not in pos(*freeidxs - set([from_idx, to]))
+    )
     return e
+
 
 def weak_links(puzzle, from_idx):
-    pos = lambda x:puzzle.get_possibilities(x)
+
+    def pos(x):
+        puzzle.get_possibilities(x)
+
     from_pos = pos(from_idx)
 
-    e=((to, v)
-       for freefn in [puzzle.free_in_square,
-                      puzzle.free_in_col,
-                      puzzle.free_in_row]
-       for freeidxs in [freefn(from_idx)]
-       for to in freeidxs
-       for v in from_pos & pos(to)
-       # any cell in a house that shares a value with
-       # this index is weakly linked
-       )
-    return e
+    e = (models.Link(puzzle, from_idx, to, v, False, from_pos)
+         for freefn in [puzzle.free_in_square,
+                        puzzle.free_in_col,
+                        puzzle.free_in_row]
+         for freeidxs in [freefn(from_idx)]
+         for to in freeidxs
 
+         for v in from_pos & pos(to)
+         # any cell in a house that shares a value with
+         # this index is weakly linked
+    )
+    return e
 
 
 def alternating_chains(puzzle):
-    def links(idx,chain):
-        if len(chain)%2==0 : return puzzle.strong_links(idx)
-        else: return puzzle.weak_links(idx)
+    def links(idx, chain):
+        if len(chain) % 2 == 0:
+            return strong_links(puzzle, idx)
+        else:
+            return weak_links(puzzle, idx)
 
-    def rec (idx,chain=[]):
-        for link in links(idx,chain):
+    def rec(idx, chain=[]):
+        for link in links(idx, chain):
             newc = chain+[link]
             yield newc
-            for chain in rec(link,newc):
+            for chain in rec(link, newc):
                 yield chain
 
     for i in list(puzzle.unsolved_idxs):
-        if puzzle.index_solved(i): continue
+        if puzzle.index_solved(i):
+            continue
         for chain in rec(i):
             yield chain
 
-def fishy_cycles(puzzle):
-    """
-    XWING / Swordfish generalization:
-    http://www.sudopedia.org/wiki/Fishy_Cycle
-    """
-    for chain in puzzle.alternating_chains():
-        # look for xwing cycles
-        if len(chain) != 5 or chain[0] != chain[-1] \
-                or len(set(chain))!=4:
-            continue
+
+def nl_2strong(l0, l1):
+    return prev_link.strong and lnk.strong and \
+        prev_link.value != lnk.value
 
 
+def nl_2weak(l0, l1):
+    return not prev_link.strong and not lnk.strong and \
+        prev_link.value != lnk.value and \
+        len(lnk.possibilities) == 2
+
+
+def nl_weakstrong(l0, l1):
+    return prev_link.strong != lnk.strong and prev_link.value == lnk.value
+
+
+def nice_loops_starting_at(puzzle, from_idx):
+    def rec(idx, prev_link=None, chain=[]):
+        for lnk in itertools.chain(strong_links(puzzle, idx),
+                                   weak_links(puzzle, idx)):
+            def deeper():
+                rec(lnk.to, lnk, chain+[lnk])
+            if not prev_link and lnk.strong:
+                deeper()
+            else:
+                if chain[0].from_idx == lnk.to_idx:
+                    yield chain
+                elif prev_link.same_indexes(lnk):
+                    continue
+                #  two strong links - diff valus
+                elif nl_2strong(prev_link, lnk):
+                    deeper()
+                #  two weak links - diff vals
+                elif nl_2weak(prev_link, lnk):
+                    deeper()
+                #  one weak one strong - diff vals and bivalue
+                elif nl_weakstrong(prev_link, lnk):
+                    deeper()
+
+    #  If a square has two weak links, then it must be bivalue (two
+    #  candidates) and the link candidates must be different.
+
+    #  If a square has two strong links, then the links must have
+    #  different candidates.
+
+    #  If a square has one strong and one weak link (in either
+    #  combination), then the link candidates must be the same.
+    for it in rec(from_idx):
+        yield models.NiceLoop(puzzle, it)
+
+
+def nl_continuous_loop_remove(puzzle, lnk):
+    constrained = False
+    if not lnk.strong:
+        for idx in itertools.chain(puzzle.free_related_cells(lnk.to_idx),
+                                   puzzle.free_related_cells(lnk.from_idx)):
+            if idx not in lnk.idxs:
+                constrained = constrained or \
+                              puzzle.remove_index_possibilities(idx, lnk.value)
+    return constrained
+
+
+def nice_loop_constrainer(puzzle, loop):
+    constrained = False
+    first, last = loop.links[0], loop.links[-1]
+
+    # Type1 Discontinous Chain
+    if not last.strong and not first.strong and \
+       first.value == last.value:
+        puzzle.remove_index_possibilities(first.from_idx, first.value)
+    # Type2 Discontinous Chain
+    elif first.value == last.value and first.strong and last.strong:
+        puzzle.set_index_possibilities(
+            first.from_idx, set([first.value]))
+    # Type3 Discontinous v1
+    elif last.value != first.value:
+        if not first.strong and last.strong:
+            puzzle.remove_index_possibilities(
+                first.from_idx, first.value)
+        elif first.strong and not last.strong:
+            puzzle.remove_index_possibilities(
+                first.from_idx, last.value)
+    # Continuous
+    elif nl_weakstrong(first, last) or nl_2weak(first, last) \
+         or nl_2strong(first, last):
+        for i in range(0, len(loop.links)):
+            l0, l1 = loop.links[i-1], loop.links[i]
+            if nl_2strong(l0, l1):
+                puzzle.set_index_possibilities(
+                    l0.to_idx, set([l0.value, l1.value]))
+            else:
+                nl_continuous_loop_remove(puzzle, l0)
+                nl_continuous_loop_remove(puzzle, l1)
+
+def nice_loops_strategy(puzzle):
+    """
+    http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
+    """
+    for idx in puzzle.free_idxs:
+        for loop in nice_loops_starting_at(puzzle, idx):
+            nice_loop_constrainer(puzzle, loop)
 
 
 def xy_wing(puzzle):

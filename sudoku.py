@@ -135,7 +135,19 @@ class Sudoku (object):
                     return True
         while(do()):
             pass
-        
+
+    def free_idxs(self):
+        return (idx
+                for i in PIDXS
+                for j in PIDXS
+                for idx in [Index(i, j)]
+                if not self.index_solved(idx))
+
+    def bi_value_idxs(self):
+        return (idx
+                for idx in self.free_idxs
+                if len(self.get_possibilities(idx)) == 2)
+
     def free_in_row(self, idx_in):
         return set([idx
                     for j in PIDXS
@@ -199,7 +211,7 @@ class Sudoku (object):
             constrained_this_set = True
         return constrained_this_set
 
-    def remove_index_possibilities(self, idx,pos):
+    def remove_index_possibilities(self, idx, pos):
         new_pos = self.get_possibilities(idx)-pos
         return self.set_index_possibilities(idx, new_pos)
         
@@ -216,7 +228,7 @@ class Sudoku (object):
         return self
 
     def status(self):
-        s=StringIO()
+        s = StringIO()
         if self.is_solved():
             s.write('Solved Puzzle: \n')
         else:
