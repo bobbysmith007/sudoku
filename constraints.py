@@ -372,7 +372,7 @@ def strong_links (puzzle,from_idx):
                         puzzle.free_in_row]
          for freeidxs in [freefn(from_idx)]
          for to in freeidxs
-         for v in from_pos & pos(to)
+         for v in (from_pos or set()) & (pos(to) or set())
 
          #  V can only be in from or to
          #  so it is a strong link
@@ -395,7 +395,7 @@ def weak_links(puzzle, from_idx):
          for freeidxs in [freefn(from_idx)]
          for to in freeidxs
 
-         for v in from_pos & pos(to)
+         for v in (from_pos or set()) & (pos(to) or set())
          # any cell in a house that shares a value with
          # this index is weakly linked
     )
@@ -491,38 +491,49 @@ def nice_loop_constrainer(puzzle, loop):
     # Type1 Discontinous Chain
     if not last.strong and not first.strong and \
        first.value == last.value:
-        puzzle.remove_index_possibilities(first.from_idx, first.value)
+        constrained = constrained or \
+            puzzle.remove_index_possibilities(first.from_idx, first.value)
     # Type2 Discontinous Chain
     elif first.value == last.value and first.strong and last.strong:
-        puzzle.set_index_possibilities(
-            first.from_idx, set([first.value]))
+        constrained = constrained or \
+            puzzle.set_index_possibilities(
+                first.from_idx, set([first.value]))
     # Type3 Discontinous v1
     elif last.value != first.value:
         if not first.strong and last.strong:
-            puzzle.remove_index_possibilities(
-                first.from_idx, first.value)
+            constrained = constrained or \
+                puzzle.remove_index_possibilities(
+                    first.from_idx, first.value)
         elif first.strong and not last.strong:
-            puzzle.remove_index_possibilities(
-                first.from_idx, last.value)
+            constrained = constrained or \
+                puzzle.remove_index_possibilities(
+                    first.from_idx, last.value)
     # Continuous
     elif nl_weakstrong(first, last) or nl_2weak(first, last) \
          or nl_2strong(first, last):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
             if nl_2strong(l0, l1):
-                puzzle.set_index_possibilities(
-                    l0.to_idx, set([l0.value, l1.value]))
+                constrained = constrained or \
+                    puzzle.set_index_possibilities(
+                        l0.to_idx, set([l0.value, l1.value]))
             else:
-                nl_continuous_loop_remove(puzzle, l0)
-                nl_continuous_loop_remove(puzzle, l1)
+                constrained = constrained or \
+                    nl_continuous_loop_remove(puzzle, l0)
+                constrained = constrained or \
+                    nl_continuous_loop_remove(puzzle, l1)
+    return constrained
+
 
 def nice_loops_strategy(puzzle):
     """
     http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
     """
-    for idx in puzzle.free_idxs:
+    constrained = False
+    for idx in puzzle.free_idxs():
         for loop in nice_loops_starting_at(puzzle, idx):
-            nice_loop_constrainer(puzzle, loop)
+            constrained = constrained or nice_loop_constrainer(puzzle, loop)
+    return constrained
 
 
 def xy_wing(puzzle):
@@ -566,7 +577,7 @@ constraintsToRun = [
     xy_chain,
     xwing_col_constraint,
     xwing_row_constraint,
-
+    nice_loops_strategy,
     # These shouldnt ever produce anything
     # squeeze,
     # run_constraints_across_houses(naked_set_exclusions),
