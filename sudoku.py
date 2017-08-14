@@ -167,8 +167,8 @@ class SudokuPuzzle (object):
                     if not self.index_solved(idx)])
 
     def free_related_cells(self, idx):
-        return self.free_in_row(idx)| \
-            self.free_in_col(idx)|self.free_in_square(idx)
+        return (self.free_in_row(idx) |
+                self.free_in_col(idx) | self.free_in_square(idx)) - set([idx])
 
     def free_related_possibilities(self, idx):
         idxs = self.free_related_cells(idx)-set(idx)
@@ -218,9 +218,9 @@ class SudokuPuzzle (object):
         
     def get_possibilities(self, *idxs):
         if len(idxs) == 0:
-            return set([])
+            return set()
         sets = [self.possibility_hash.get(i) for i in idxs]
-        return set.union(*sets)
+        return set.union(*sets) or set()
 
     def is_solved(self):
         for i in puzzle_range:
@@ -293,7 +293,7 @@ def read_puzzle(s):
     
     def get(i, j):
         if len(partial_sol) > i and len(partial_sol[i]) > j:
-            return partial_sol[i][j]
+            return tryint(partial_sol[i][j])
     puzzle = SudokuPuzzle([[get(i, j) for j in PIDXS] for i in PIDXS])
     # print puzzle
     return puzzle

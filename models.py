@@ -16,10 +16,10 @@ class Index (object):
         return self.row == other.row and self.col == other.col
 
     def __str__(self):
-        return "<%s,%s>" % (self.row, self.col)
+        return "[R%sC%s]" % (self.row, self.col)
 
     def __repr__(self):
-        return "<%s,%s>" % (self.row, self.col)
+        return "Index(%s,%s)" % (self.row, self.col)
 
     def __hash__(self):
         return self.id()
@@ -31,6 +31,15 @@ class Index (object):
     def __iter__(self):
         yield self.row
         yield self.col
+
+    def same_square(self, idx):
+        ridx = square_idxs(self.row)
+        if idx.row not in ridx:
+            return False
+        cidx = square_idxs(self.col)
+        if idx.col not in cidx:
+            return False
+        return True
 
 
 def square_idxs(i):
@@ -137,12 +146,42 @@ class NoPossibleValues(Exception):
         return "NoPossibleValues for %s:%r" % (self.idx, self.data)
 
 
+def is_square_strong_link(puzzle, from_idx, to_idx, v):
+    if not from_idx.same_square(to_idx):
+        return False
+    other_idx = puzzle.free_in_square(from_idx) - set([from_idx, to_idx])
+    other_pos = puzzle.get_possibilities(*other_idx)
+    if v not in other_pos:
+        return True
+
+
+def is_col_strong_link(puzzle, from_idx, to_idx, v):
+    if from_idx.col != to_idx.col:
+        return False
+    other_idx = puzzle.free_in_col(from_idx) - set([from_idx, to_idx])
+    other_pos = puzzle.get_possibilities(*other_idx)
+
+    if v not in other_pos:
+        return True
+
+
+def is_row_strong_link(puzzle, from_idx, to_idx, v):
+    if from_idx.row != to_idx.row:
+        return False
+    other_idx = puzzle.free_in_row(from_idx) - set([from_idx, to_idx])
+    other_pos = puzzle.get_possibilities(*other_idx)
+    if v not in other_pos:
+        return True
+
+
 class Link(object):
     def __init__(self, puzzle, from_idx, to_idx, value,
                  strong=False, possibilities=[]):
-        for k, v in locals():
+        for k, v in locals().items():
             setattr(self, k, v)
         self.idxs = set([self.from_idx, self.to_idx])
+        if not strong:
+            self.calc_strong()
 
     def same_indexes(self, other):
         return other.idxs == self.idxs
@@ -150,6 +189,25 @@ class Link(object):
     def __eq__(self, other):
         #every strong link is a weak link
         return self.same_indexes(other) and self.value == other.value
+
+    def __str__(self):
+        delim = '-'
+        if self.strong:
+            delim = '='
+        return "%s%s%d%s%s" % (
+            self.from_idx, delim, self.value, delim, self.to_idx)
+
+    def __repr__(self):
+        return str(self)
+
+    def calc_strong(self):
+        if is_square_strong_link(
+                self.puzzle, self.from_idx, self.to_idx, self.value) \
+           or is_row_strong_link(
+               self.puzzle, self.from_idx, self.to_idx, self.value) \
+           or is_col_strong_link(
+               self.puzzle, self.from_idx, self.to_idx, self.value):
+            self.strong = True
 
 
 class Chain(object):
@@ -163,10 +221,16 @@ class Chain(object):
         for l in self.links:
             yield l
 
+    def __str__(self):
+        out = "" #str(self.links[0])
+        for l in self.links:
+            out += str(l)+'/'
+        return out
+
 
 class NiceLoop(Chain):
     #  http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
     def __init__(self, puzzle, links=[]):
+        super(NiceLoop, self).__init__(links)
         if links[-1].to_idx != links[0].from_idx:
-            raise Exception('Invalid NiceLoop')
-        super(Chain, links)
+            raise Exception('Invalid NiceLoop %s' % (self))

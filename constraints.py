@@ -360,47 +360,67 @@ def x_chain(puzzle):
     """
     pass
 
-def strong_links (puzzle, from_idx):
-    def pos(x):
-        puzzle.get_possibilities(x)
-
-    from_pos = pos(from_idx)
-
-    e = (models.Link(puzzle, from_idx, to, v, True, from_pos)
-         for freefn in [puzzle.free_in_square,
-                        puzzle.free_in_col,
-                        puzzle.free_in_row]
-         for freeidxs in [freefn(from_idx)]
-         for to in freeidxs
-         for v in (from_pos or set()) & (pos(to) or set())
-
-         #  V can only be in from or to
-         #  so it is a strong link
-         if v not in pos(*freeidxs - set([from_idx, to]))
-    )
-    return e
-
 
 def weak_links(puzzle, from_idx):
-
-    def pos(x):
-        puzzle.get_possibilities(x)
-
+    def pos(*x):
+        return puzzle.get_possibilities(*x)
     from_pos = pos(from_idx)
+    free = puzzle.free_related_cells(from_idx)
+    for to in free:
+        to_pos = pos(to)
+        vals = from_pos & to_pos
+        for v in vals:
+            #TODO: dont yield strong links ?
+            l = models.Link(puzzle, from_idx, to, v, False, from_pos)
+            yield l
 
-    e = (models.Link(puzzle, from_idx, to, v, False, from_pos)
-         for freefn in [puzzle.free_in_square,
-                        puzzle.free_in_col,
-                        puzzle.free_in_row]
-         for freeidxs in [freefn(from_idx)]
-         for to in freeidxs
 
-         for v in (from_pos or set()) & (pos(to) or set())
-         # any cell in a house that shares a value with
-         # this index is weakly linked
-    )
-    return e
+def row_strong_links(puzzle, from_idx):
+    def pos(*x):
+        return puzzle.get_possibilities(*x)
+    from_pos = pos(from_idx)
+    free = set(puzzle.free_in_row(from_idx)) - set([from_idx])
+    for to in free:
+        to_pos = pos(to)
+        vals = from_pos & to_pos
+        for v in vals:
+            if models.is_row_strong_link(puzzle, from_idx, to, v):
+                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
+                yield l
 
+
+def col_strong_links(puzzle, from_idx):
+    def pos(*x):
+        return puzzle.get_possibilities(*x)
+    from_pos = pos(from_idx)
+    free = set(puzzle.free_in_col(from_idx)) - set([from_idx])
+    for to in free:
+        to_pos = pos(to)
+        vals = from_pos & to_pos
+        for v in vals:
+            if models.is_col_strong_link(puzzle, from_idx, to, v):
+                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
+                yield l
+
+
+def square_strong_links(puzzle, from_idx):
+    def pos(*x):
+        return puzzle.get_possibilities(*x)
+    from_pos = pos(from_idx)
+    free = set(puzzle.free_in_square(from_idx)) - set([from_idx])
+    for to in free:
+        to_pos = pos(to)
+        vals = from_pos & to_pos
+        for v in vals:
+            if models.is_square_strong_link(puzzle, from_idx, to, v):
+                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
+                yield l
+
+
+def strong_links(puzzle, from_idx):
+    return set(col_strong_links(puzzle, from_idx)) | \
+        set(row_strong_links(puzzle, from_idx)) | \
+        set(square_strong_links(puzzle, from_idx))
 
 def alternating_chains(puzzle):
     def links(idx, chain):
@@ -424,31 +444,36 @@ def alternating_chains(puzzle):
 
 
 def nl_2strong(l0, l1):
-    return prev_link.strong and lnk.strong and \
-        prev_link.value != lnk.value
+    return l0.strong and l1.strong and \
+        l0.value != l1.value
 
 
 def nl_2weak(l0, l1):
-    return not prev_link.strong and not lnk.strong and \
-        prev_link.value != lnk.value and \
-        len(lnk.possibilities) == 2
+    return not l0.strong and not l1.strong and \
+        l0.value != l1.value and \
+        len(l1.possibilities) == 2
 
 
 def nl_weakstrong(l0, l1):
-    return prev_link.strong != lnk.strong and prev_link.value == lnk.value
+    return l0.strong != l1.strong and l0.value == l1.value
 
 
 def nice_loops_starting_at(puzzle, from_idx):
-    def rec(idx, prev_link=None, chain=[]):
-        for lnk in itertools.chain(strong_links(puzzle, idx),
-                                   weak_links(puzzle, idx)):
+    chains = []
+
+    def nl_rec(idx, prev_link=None, chain=[]):
+        for lnk in weak_links(puzzle, idx):
             def deeper():
-                rec(lnk.to, lnk, chain+[lnk])
-            if not prev_link and lnk.strong:
-                deeper()
+                if lnk.to_idx not in [c.from_idx for c in chain]:
+                    nl_rec(lnk.to_idx, lnk, chain+[lnk])
+            if not prev_link:
+                if lnk.strong:
+                    deeper()
+                else:
+                    continue
             else:
-                if chain[0].from_idx == lnk.to_idx:
-                    yield chain
+                if len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
+                    chains.append(chain+[lnk])
                 elif prev_link.same_indexes(lnk):
                     continue
                 #  two strong links - diff valus
@@ -469,7 +494,8 @@ def nice_loops_starting_at(puzzle, from_idx):
 
     #  If a square has one strong and one weak link (in either
     #  combination), then the link candidates must be the same.
-    for it in rec(from_idx):
+    nl_rec(from_idx)
+    for it in chains:
         yield models.NiceLoop(puzzle, it)
 
 
@@ -577,7 +603,7 @@ constraintsToRun = [
     xy_chain,
     xwing_col_constraint,
     xwing_row_constraint,
-    nice_loops_strategy,
+#    nice_loops_strategy,
     # These shouldnt ever produce anything
     # squeeze,
     # run_constraints_across_houses(naked_set_exclusions),
