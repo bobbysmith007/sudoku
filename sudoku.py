@@ -6,7 +6,7 @@ from copy import deepcopy, copy
 import puzzles, puzzles2
 import models
 from models import PVALS, PIDXS, Index, puzzle_range, square_idxs, square
-import constraints
+import constraints, traceback
 
 logging.basicConfig(level=logging.INFO)
 
@@ -56,6 +56,14 @@ class SudokuPuzzle (object):
             self.possibility_hash[idx] = pos
         return self.possibility_hash
 
+    def make_clone(self):
+        c = SudokuPuzzle(
+            deepcopy(self.puzzle), self, self.depth, self.start,
+            deepcopy(self.unsolved_idxs),
+            deepcopy(self.possibility_hash),
+            self.stats)
+        return c
+        
     def make_child(self, box=None, new_val=None):
         self.stats.puzzle_branches += 1
         idx = self.stats.puzzle_branches
@@ -194,9 +202,9 @@ class SudokuPuzzle (object):
             
     def set_index_possibilities(self, idx, pos):
         constrained_this_set = False
+        old = self.possibility_hash.get(idx, set())
         if len(pos) == 0:
             raise models.NoPossibleValues(idx)
-        old = self.possibility_hash.get(idx, set())
         self.possibility_hash[idx] = pos
         if len(pos) == 1 and not self.index_solved(idx):
             self._solved_this_cycle = True

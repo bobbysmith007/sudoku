@@ -19,6 +19,42 @@ def niceloop_puzzle0():
 """
     return sudoku.read_puzzle(p)
 
+
+# very hard high branching
+@pytest.fixture
+def niceloop_puzzle2 ():
+    p = """
+. . . |. 6 . |. . .
+. 5 9 |. . . |. . 8
+2 . . |. . 8 |. . .
+------+------+------
+. 4 5 |. . . |. . .
+. . 3 |. . . |. . .
+. . 6 |. . 3 |. 5 4
+------+------+------
+. . . |3 2 5 |. . 6
+. . . |. . . |. . .
+. . . |. . . |. . .
+"""
+    return sudoku.read_puzzle(p)
+
+
+# very hard, high branching
+@pytest.fixture
+def niceloop_puzzle1():
+    p = """
+....7..2.
+8.......6
+.1.2.5...
+9.54....8
+.........
+3....85.1
+...3.2.8.
+4.......9
+.7..6....
+"""
+    return sudoku.read_puzzle(p)
+
 def test_strong_links_cols(niceloop_puzzle0):
     p = niceloop_puzzle0
     from_idx = Index(row=3,col=6)
@@ -39,6 +75,8 @@ def test_strong_links_rows(niceloop_puzzle0):
 #        for loop in constraints.nice_loops_starting_at(p, idx):
 #            print "Loop at: ", loop
 
-def test_solve(niceloop_puzzle0):
-    p = niceloop_puzzle0
-    print p.solve()
+
+def test_solve(niceloop_puzzle0, niceloop_puzzle1, niceloop_puzzle2):
+    # print niceloop_puzzle0.solve()
+    print niceloop_puzzle1.solve()
+    print niceloop_puzzle2.solve()

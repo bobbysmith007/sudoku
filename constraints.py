@@ -502,8 +502,10 @@ def nice_loops_starting_at(puzzle, from_idx):
 def nl_continuous_loop_remove(puzzle, lnk):
     constrained = False
     if not lnk.strong:
-        for idx in itertools.chain(puzzle.free_related_cells(lnk.to_idx),
-                                   puzzle.free_related_cells(lnk.from_idx)):
+        cells = puzzle.free_related_cells(lnk.to_idx) & \
+                puzzle.free_related_cells(lnk.from_idx)
+        # print "Removing from",  cells, "for", lnk
+        for idx in cells:
             if idx not in lnk.idxs:
                 if puzzle.remove_index_possibilities(idx, lnk.value):
                     puzzle.stats.inc('nice_loops')
@@ -534,18 +536,19 @@ def nice_loop_constrainer(puzzle, loop):
 
     # Type3 Discontinous v1
     elif last.value != first.value:
+        # first is weak, remove its value
         if not first.strong and last.strong:
             if puzzle.remove_index_possibilities(
                     first.from_idx, first.value):
                 puzzle.stats.inc('nice_loops')
-                puzzle.stats.inc('nice_loops (rem D3)')
+                puzzle.stats.inc('nice_loops (rem D3-1)')
                 constrained = True
-
+        # last is weak, remove its value
         elif first.strong and not last.strong:
             if puzzle.remove_index_possibilities(
                     first.from_idx, last.value):
                 puzzle.stats.inc('nice_loops')
-                puzzle.stats.inc('nice_loops (rem D3)')
+                puzzle.stats.inc('nice_loops (rem D3-2)')
                 constrained = True
 
     # Continuous
@@ -560,8 +563,8 @@ def nice_loop_constrainer(puzzle, loop):
                     puzzle.stats.inc('nice_loops (set C)')
                     constrained = True
 
-            elif nl_continuous_loop_remove(puzzle, l0) or \
-                 nl_continuous_loop_remove(puzzle, l1):
+            elif (nl_continuous_loop_remove(puzzle, l0) or
+                  nl_continuous_loop_remove(puzzle, l1)):
                 constrained = True
     return constrained
 
@@ -573,7 +576,9 @@ def nice_loops_strategy(puzzle):
     constrained = False
     for idx in puzzle.free_idxs():
         for loop in nice_loops_starting_at(puzzle, idx):
-            constrained = constrained or nice_loop_constrainer(puzzle, loop)
+            if nice_loop_constrainer(puzzle, loop):
+                constrained = True
+                return True
     return constrained
 
 
