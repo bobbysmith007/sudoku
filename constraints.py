@@ -527,40 +527,40 @@ def nice_loop_constrainer(puzzle, loop):
     constrained = False
     first, last = loop.links[0], loop.links[-1]
 
-    # Type1 Discontinous Chain
-    if not last.strong and not first.strong and \
-       first.value == last.value:
-        if puzzle.remove_index_possibilities(first.from_idx, first.value):
-            puzzle.stats.inc('nice_loops (rem D1)')
-            puzzle.stats.inc('nice_loops')
-            constrained = True
+    # # Type1 Discontinous Chain
+    # if not last.strong and not first.strong and \
+    #    first.value == last.value:
+    #     if puzzle.remove_index_possibilities(first.from_idx, first.value):
+    #         puzzle.stats.inc('nice_loops (rem D1)')
+    #         puzzle.stats.inc('nice_loops')
+    #         constrained = True
 
-    # Type2 Discontinous Chain
-    elif first.value == last.value and first.strong and last.strong:
-        if puzzle.set_index_possibilities(first.from_idx, set([first.value])):
-            puzzle.stats.inc('nice_loops (set D2)')
-            puzzle.stats.inc('nice_loops')
-            constrained = True
+    # # Type2 Discontinous Chain
+    # elif first.value == last.value and first.strong and last.strong:
+    #     if puzzle.set_index_possibilities(first.from_idx, set([first.value])):
+    #         puzzle.stats.inc('nice_loops (set D2)')
+    #         puzzle.stats.inc('nice_loops')
+    #         constrained = True
 
-    # Type3 Discontinous v1
-    elif last.value != first.value:
-        # first is weak, remove its value
-        if not first.strong and last.strong:
-            if puzzle.remove_index_possibilities(
-                    first.from_idx, first.value):
-                puzzle.stats.inc('nice_loops')
-                puzzle.stats.inc('nice_loops (rem D3-1)')
-                constrained = True
-        # last is weak, remove its value
-        elif first.strong and not last.strong:
-            if puzzle.remove_index_possibilities(
-                    first.from_idx, last.value):
-                puzzle.stats.inc('nice_loops')
-                puzzle.stats.inc('nice_loops (rem D3-2)')
-                constrained = True
+    # # Type3 Discontinous v1
+    # elif last.value != first.value:
+    #     # first is weak, remove its value
+    #     if not first.strong and last.strong:
+    #         if puzzle.remove_index_possibilities(
+    #                 first.from_idx, first.value):
+    #             puzzle.stats.inc('nice_loops')
+    #             puzzle.stats.inc('nice_loops (rem D3-1)')
+    #             constrained = True
+    #     # last is weak, remove its value
+    #     elif first.strong and not last.strong:
+    #         if puzzle.remove_index_possibilities(
+    #                 first.from_idx, last.value):
+    #             puzzle.stats.inc('nice_loops')
+    #             puzzle.stats.inc('nice_loops (rem D3-2)')
+    #             constrained = True
 
     # Continuous
-    elif (nl_weakstrong(first, last) or nl_2weak(first, last)
+    if (nl_weakstrong(first, last) or nl_2weak(first, last)
           or nl_2strong(first, last)):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
