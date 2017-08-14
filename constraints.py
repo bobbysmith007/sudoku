@@ -360,7 +360,7 @@ def x_chain(puzzle):
     """
     pass
 
-def strong_links (puzzle,from_idx):
+def strong_links (puzzle, from_idx):
     def pos(x):
         puzzle.get_possibilities(x)
 

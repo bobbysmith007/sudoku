@@ -18,7 +18,7 @@ def tryint(v):
         return None
 
 
-class Sudoku (object):
+class SudokuPuzzle (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None, possibility_hash=None,
                  stats=None):
@@ -62,10 +62,11 @@ class Sudoku (object):
         if idx % 1000 == 0:
             print "Making branch (idx:%d, depth:%d): %s val:%s - %ss" % \
                 (idx, self.depth, box, new_val, time.time()-self.start)
-        c = Sudoku(deepcopy(self.puzzle), self, self.depth+1, self.start,
-                   deepcopy(self.unsolved_idxs),
-                   deepcopy(self.possibility_hash),
-                   self.stats)
+        c = SudokuPuzzle(
+            deepcopy(self.puzzle), self, self.depth+1, self.start,
+            deepcopy(self.unsolved_idxs),
+            deepcopy(self.possibility_hash),
+            self.stats)
         if box and new_val:
             c.set_index_possibilities(box.idx, set([new_val]))
         return c
@@ -279,29 +280,23 @@ class Sudoku (object):
                 if j % 3 == 2:
                     s.write('|')
             s.write('\n')
-            if i%3==2: s.write(lb)
+            if i % 3 == 2:
+                s.write(lb)
         return s.getvalue()
 
 
 def read_puzzle(s):
-    puzzle = [[None for j in PIDXS]
-              for i in PIDXS]
+
     # skip first/last line
     s = re.sub(r'\n\n+', '\n', re.sub(r'-|\+|\|| |,', "", s))
-    partial_sol = s.splitlines()[1:]
-    i, j = 0, 0
-    for row in partial_sol:
-        j = 0
-        if i > 8:
-            continue
-        for char in row:
-            # print i,j,char
-            if j > 8:
-                continue
-            puzzle[i][j] = tryint(char)
-            j += 1
-        i += 1
-    return Sudoku(puzzle)
+    partial_sol = [i for i in s.splitlines() if i.strip()]
+    
+    def get(i, j):
+        if len(partial_sol) > i and len(partial_sol[i]) > j:
+            return partial_sol[i][j]
+    puzzle = SudokuPuzzle([[get(i, j) for j in PIDXS] for i in PIDXS])
+    # print puzzle
+    return puzzle
 
 
 PUZZLE = read_puzzle(puzzles.puzzles[0])
