@@ -505,8 +505,11 @@ def nl_continuous_loop_remove(puzzle, lnk):
         for idx in itertools.chain(puzzle.free_related_cells(lnk.to_idx),
                                    puzzle.free_related_cells(lnk.from_idx)):
             if idx not in lnk.idxs:
-                constrained = constrained or \
-                              puzzle.remove_index_possibilities(idx, lnk.value)
+                if puzzle.remove_index_possibilities(idx, lnk.value):
+                    puzzle.stats.inc('nice_loops')
+                    puzzle.stats.inc('nice_loops (rem C)')
+                    constrained = True
+
     return constrained
 
 
@@ -517,37 +520,49 @@ def nice_loop_constrainer(puzzle, loop):
     # Type1 Discontinous Chain
     if not last.strong and not first.strong and \
        first.value == last.value:
-        constrained = constrained or \
-            puzzle.remove_index_possibilities(first.from_idx, first.value)
+        if puzzle.remove_index_possibilities(first.from_idx, first.value):
+            puzzle.stats.inc('nice_loops (rem D1)')
+            puzzle.stats.inc('nice_loops')
+            constrained = True
+
     # Type2 Discontinous Chain
     elif first.value == last.value and first.strong and last.strong:
-        constrained = constrained or \
-            puzzle.set_index_possibilities(
-                first.from_idx, set([first.value]))
+        if puzzle.set_index_possibilities(first.from_idx, set([first.value])):
+            puzzle.stats.inc('nice_loops (set D2)')
+            puzzle.stats.inc('nice_loops')
+            constrained = True
+
     # Type3 Discontinous v1
     elif last.value != first.value:
         if not first.strong and last.strong:
-            constrained = constrained or \
-                puzzle.remove_index_possibilities(
-                    first.from_idx, first.value)
+            if puzzle.remove_index_possibilities(
+                    first.from_idx, first.value):
+                puzzle.stats.inc('nice_loops')
+                puzzle.stats.inc('nice_loops (rem D3)')
+                constrained = True
+
         elif first.strong and not last.strong:
-            constrained = constrained or \
-                puzzle.remove_index_possibilities(
-                    first.from_idx, last.value)
+            if puzzle.remove_index_possibilities(
+                    first.from_idx, last.value):
+                puzzle.stats.inc('nice_loops')
+                puzzle.stats.inc('nice_loops (rem D3)')
+                constrained = True
+
     # Continuous
     elif nl_weakstrong(first, last) or nl_2weak(first, last) \
          or nl_2strong(first, last):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
             if nl_2strong(l0, l1):
-                constrained = constrained or \
-                    puzzle.set_index_possibilities(
-                        l0.to_idx, set([l0.value, l1.value]))
-            else:
-                constrained = constrained or \
-                    nl_continuous_loop_remove(puzzle, l0)
-                constrained = constrained or \
-                    nl_continuous_loop_remove(puzzle, l1)
+                if puzzle.set_index_possibilities(
+                        l0.to_idx, set([l0.value, l1.value])):
+                    puzzle.stats.inc('nice_loops')
+                    puzzle.stats.inc('nice_loops (set C)')
+                    constrained = True
+
+            elif nl_continuous_loop_remove(puzzle, l0) or \
+                 nl_continuous_loop_remove(puzzle, l1):
+                constrained = True
     return constrained
 
 
@@ -598,12 +613,11 @@ def xy_wing(puzzle):
 constraintsToRun = [
     single_possibility,
     run_constraints_across_houses(unique_possibility),
-
     run_constraints_across_houses(set_exclusions),
     xy_chain,
     xwing_col_constraint,
     xwing_row_constraint,
-#    nice_loops_strategy,
+    nice_loops_strategy,
     # These shouldnt ever produce anything
     # squeeze,
     # run_constraints_across_houses(naked_set_exclusions),

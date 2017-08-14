@@ -213,6 +213,8 @@ class SudokuPuzzle (object):
         return constrained_this_set
 
     def remove_index_possibilities(self, idx, pos):
+        if not isinstance(pos, set):
+            pos = set([pos])
         new_pos = self.get_possibilities(idx)-pos
         return self.set_index_possibilities(idx, new_pos)
         

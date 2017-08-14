@@ -32,13 +32,13 @@ def test_strong_links_rows(niceloop_puzzle0):
     rows = set(constraints.row_strong_links(p, from_idx))
     assert "[R0C4]=8=[R0C8]" in [str(i) for i in rows]
 
-def test_nice_loop(niceloop_puzzle0):
-    p = niceloop_puzzle0
-    print "Finding loops"
-    for idx in p.free_idxs():
-        for loop in constraints.nice_loops_starting_at(p, idx):
-            print "Loop at: ", loop
+#def test_nice_loop(niceloop_puzzle0):
+#    p = niceloop_puzzle0
+#    print "Finding loops"
+#    for idx in p.free_idxs():
+#        for loop in constraints.nice_loops_starting_at(p, idx):
+#            print "Loop at: ", loop
 
-def solve(niceloop_puzzle0):
+def test_solve(niceloop_puzzle0):
     p = niceloop_puzzle0
     print p.solve()
