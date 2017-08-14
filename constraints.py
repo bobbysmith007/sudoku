@@ -30,6 +30,7 @@ def run_constraints_across_houses(constraint):
             constraint(puzzle, idxs, 'row')
             if puzzle._constrained_this_cycle:
                 return True
+    fn.__name__ = constraint.__name__+'_across_houses'
     return fn
 
 
@@ -145,14 +146,21 @@ def squeeze(puzzle):
 
 
 def unique_possibility(puzzle, cells, name):
-    gen = ((v, cell)
-           for cell in cells
-           for v in puzzle.get_possibilities(cell)
-           for others in [(cells - set([cell]))]
-           if len(others) > 0
-           if v not in puzzle.get_possibilities(*others))
-    for v, cell in gen:
-        if(puzzle.set_index_possibilities(cell, set([v]))):
+    def gen():
+        for cell in cells:
+            pos = puzzle.get_possibilities(cell)
+            if len(pos) <= 1:
+                continue
+            others = (cells - set([cell]))
+            if len(others) == 0:
+                continue
+            other_pos = puzzle.get_possibilities(*others)
+            for v in pos:
+                if v not in other_pos:
+                    yield v, cell, other_pos
+
+    for v, cell, other_pos in gen():
+        if puzzle.set_index_possibilities(cell, v):
             puzzle.stats.inc('unique_possibility_' + name)
             return True
 
@@ -504,7 +512,7 @@ def nl_continuous_loop_remove(puzzle, lnk):
     if not lnk.strong:
         cells = puzzle.free_related_cells(lnk.to_idx) & \
                 puzzle.free_related_cells(lnk.from_idx)
-        # print "Removing from",  cells, "for", lnk
+        print "Removing from",  cells, "for", lnk
         for idx in cells:
             if idx not in lnk.idxs:
                 if puzzle.remove_index_possibilities(idx, lnk.value):
@@ -552,20 +560,22 @@ def nice_loop_constrainer(puzzle, loop):
                 constrained = True
 
     # Continuous
-    elif nl_weakstrong(first, last) or nl_2weak(first, last) \
-         or nl_2strong(first, last):
+    elif (nl_weakstrong(first, last) or nl_2weak(first, last)
+          or nl_2strong(first, last)):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
             if nl_2strong(l0, l1):
+                print loop, l0, l1
                 if puzzle.set_index_possibilities(
                         l0.to_idx, set([l0.value, l1.value])):
                     puzzle.stats.inc('nice_loops')
                     puzzle.stats.inc('nice_loops (set C)')
                     constrained = True
 
-            elif (nl_continuous_loop_remove(puzzle, l0) or
-                  nl_continuous_loop_remove(puzzle, l1)):
-                constrained = True
+            else:
+                if (nl_continuous_loop_remove(puzzle, l0) or
+                    nl_continuous_loop_remove(puzzle, l1)):
+                    constrained = True
     return constrained
 
 

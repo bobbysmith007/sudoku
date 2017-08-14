@@ -118,7 +118,10 @@ class Stats (object):
             for k,v in vars(k).items():
                 self.inc(k,v)
         else:
-            return setattr(self, k, getattr(self,k,0)+v)
+            val = getattr(self,k,0)+v
+            setattr(self, k, val)
+            print k, val
+            return val
 
     def __str__ (self):
         s = StringIO()
@@ -222,9 +225,9 @@ class Chain(object):
             yield l
 
     def __str__(self):
-        out = "" #str(self.links[0])
-        for l in self.links:
-            out += str(l)+'/'
+        out = str(self.links[0])
+        for l in self.links[1:]:
+            out += str(l)[6:]
         return out
 
 

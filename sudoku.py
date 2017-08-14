@@ -21,7 +21,7 @@ def tryint(v):
 class SudokuPuzzle (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None, possibility_hash=None,
-                 stats=None):
+                 stats=None, solution=None):
         self.stats = stats or models.Stats(puzzle_branches=1,
                                            constraint_steps=0)
         self.puzzle = puzzle
@@ -30,6 +30,20 @@ class SudokuPuzzle (object):
         self.unsolved_idxs = unsolved_idxs
         self.start = start or time.time()
         self.possibility_hash = possibility_hash or self.init_pos_hash()
+        self.solution = solution
+        self._current_constraint = None
+
+    def check_solution(self):
+        if not self.solution:
+            return False
+        for i in PIDXS:
+            for j in PIDXS:
+                idx = Index(i, j)
+                pos = self.get_possibilities(idx)
+                sol = self.solution.index_solved(idx)
+                if sol not in pos:
+                    raise Exception("Last constraint step an error")
+        return True
 
     def init_pos_hash(self):
         self.possibility_hash = {}
@@ -139,7 +153,9 @@ class SudokuPuzzle (object):
             self._solved_this_cycle = False
             self._constrained_this_cycle = False
             for con in constraints.constraintsToRun:
+                self._current_constraint = con
                 con(self)
+                self.check_solution()
                 if self._constrained_this_cycle or self._solved_this_cycle:
                     return True
         while(do()):
@@ -202,8 +218,12 @@ class SudokuPuzzle (object):
             
     def set_index_possibilities(self, idx, pos):
         constrained_this_set = False
+        if not isinstance(pos, set):
+            pos = set([pos])
         old = self.possibility_hash.get(idx, set())
         if len(pos) == 0:
+            print "Failed to set %s to %s from %s" % \
+                (idx, pos, self._current_constraint)
             raise models.NoPossibleValues(idx)
         self.possibility_hash[idx] = pos
         if len(pos) == 1 and not self.index_solved(idx):
@@ -225,7 +245,7 @@ class SudokuPuzzle (object):
             pos = set([pos])
         new_pos = self.get_possibilities(idx)-pos
         return self.set_index_possibilities(idx, new_pos)
-        
+
     def get_possibilities(self, *idxs):
         if len(idxs) == 0:
             return set()
