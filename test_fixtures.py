@@ -1,4 +1,6 @@
 import sudoku
+import models
+from models import Index
 import pytest
 
 @pytest.fixture
@@ -176,4 +178,35 @@ def niceloop_discon3():
 .6.813425
 """
     P = sudoku.read_puzzle(p)
+    return P
+
+
+@pytest.fixture
+def niceloop_cont1():
+    p = """
+.738.9.16
+8...163..
+1.6.5389.
+..813.7..
+73.6...4.
+..1.97638
+31796.4..
+..45....3
+.853...6.
+"""
+    P = sudoku.read_puzzle(p)
+    P.set_index_possibilities(Index(0, 0), set([4, 5]))
+    P.set_index_possibilities(Index(0, 4), set([2, 4]))
+    P.set_index_possibilities(Index(1, 1), set([5, 9]))
+    P.set_index_possibilities(Index(1, 2), set([2, 9]))
+    P.set_index_possibilities(Index(1, 3), set([4, 7]))
+    P.set_index_possibilities(Index(1, 7), set([2, 5, 7]))
+    P.set_index_possibilities(Index(1, 8), set([2, 4, 5, 7]))
+    P.set_index_possibilities(Index(2, 1), set([4, 2]))
+    P.set_index_possibilities(Index(2, 3), set([2, 4, 7]))
+    P.set_index_possibilities(Index(2, 8), set([4, 7]))
+    P.set_index_possibilities(Index(7, 4), set([7, 8]))
+    P.set_index_possibilities(Index(7, 7), set([2, 7, 8]))
+    P.set_index_possibilities(Index(8, 4), set([2, 4, 7]))
+    P.set_index_possibilities(Index(8, 8), set([1, 2, 7, 9]))
     return P

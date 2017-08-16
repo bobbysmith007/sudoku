@@ -369,7 +369,6 @@ def x_chain(puzzle):
     """
     pass
 
-
 def weak_links(puzzle, from_idx, strong_too=True):
     def pos(*x):
         return puzzle.get_possibilities(*x)
@@ -385,52 +384,10 @@ def weak_links(puzzle, from_idx, strong_too=True):
             yield l
 
 
-def row_strong_links(puzzle, from_idx):
-    def pos(*x):
-        return puzzle.get_possibilities(*x)
-    from_pos = pos(from_idx)
-    free = set(puzzle.free_in_row(from_idx)) - set([from_idx])
-    for to in free:
-        to_pos = pos(to)
-        vals = from_pos & to_pos
-        for v in vals:
-            if models.is_row_strong_link(puzzle, from_idx, to, v):
-                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
-                yield l
-
-
-def col_strong_links(puzzle, from_idx):
-    def pos(*x):
-        return puzzle.get_possibilities(*x)
-    from_pos = pos(from_idx)
-    free = set(puzzle.free_in_col(from_idx)) - set([from_idx])
-    for to in free:
-        to_pos = pos(to)
-        vals = from_pos & to_pos
-        for v in vals:
-            if models.is_col_strong_link(puzzle, from_idx, to, v):
-                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
-                yield l
-
-
-def square_strong_links(puzzle, from_idx):
-    def pos(*x):
-        return puzzle.get_possibilities(*x)
-    from_pos = pos(from_idx)
-    free = set(puzzle.free_in_square(from_idx)) - set([from_idx])
-    for to in free:
-        to_pos = pos(to)
-        vals = from_pos & to_pos
-        for v in vals:
-            if models.is_square_strong_link(puzzle, from_idx, to, v):
-                l = models.Link(puzzle, from_idx, to, v, True, from_pos)
-                yield l
-
-
 def strong_links(puzzle, from_idx):
-    return set(col_strong_links(puzzle, from_idx)) | \
-        set(row_strong_links(puzzle, from_idx)) | \
-        set(square_strong_links(puzzle, from_idx))
+    for l in weak_links(puzzle, from_idx):
+        if l.strong:
+            yield l
 
 def alternating_chains(puzzle):
     def links(idx, chain):
@@ -474,7 +431,7 @@ def nice_loops_starting_at(puzzle, from_idx):
     def do_chain(chain):
         prev_link = chain[-1]
         for lnk in weak_links(puzzle, prev_link.to_idx):
-            #found a yield able chain
+            # found a yield able chain
             if len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
                 yield chain+[lnk]
             #  dont go back
@@ -519,11 +476,43 @@ def nl_continuous_loop_remove(puzzle, lnk):
 
     return constrained
 
-
 def nice_loop_constrainer(puzzle, loop):
+    it = False
+    it = nice_loop_constrainer_cont(puzzle, loop) or it
+    if it:
+        return it
+    it = nice_loop_constrainer_discont(puzzle, loop) or it
+    if it:
+        return it
+    return it
+
+
+
+def nice_loop_constrainer_cont(puzzle, loop):
     constrained = False
     first, last = loop.links[0], loop.links[-1]
+    if (nl_weakstrong(last, first) or nl_2weak(last, first) or
+          nl_2strong(last, first)):
+        for i in range(0, len(loop.links)):
+            l0, l1 = loop.links[i-1], loop.links[i]
+            if nl_2strong(l0, l1):
+                print loop, l0, l1
+                if puzzle.set_index_possibilities(
+                        l0.to_idx, set([l0.value, l1.value])):
+                    puzzle.stats.inc('nice_loops')
+                    puzzle.stats.inc('nice_loops (set C)')
+                    constrained = True
 
+            else:
+                if (nl_continuous_loop_remove(puzzle, l0) or
+                    nl_continuous_loop_remove(puzzle, l1)):
+                    constrained = True
+    return constrained
+
+
+def nice_loop_constrainer_discont(puzzle, loop):
+    constrained = False
+    first, last = loop.links[0], loop.links[-1]
     # Type1 Discontinous Chain
     if not last.strong and not first.strong and \
        first.value == last.value:
@@ -557,22 +546,7 @@ def nice_loop_constrainer(puzzle, loop):
                 constrained = True
 
     # Continuous
-    elif (nl_weakstrong(last, first) or nl_2weak(last, first)
-          or nl_2strong(last, first)):
-        for i in range(0, len(loop.links)):
-            l0, l1 = loop.links[i-1], loop.links[i]
-            if nl_2strong(l0, l1):
-                print loop, l0, l1
-                if puzzle.set_index_possibilities(
-                        l0.to_idx, set([l0.value, l1.value])):
-                    puzzle.stats.inc('nice_loops')
-                    puzzle.stats.inc('nice_loops (set C)')
-                    constrained = True
 
-            else:
-                if (nl_continuous_loop_remove(puzzle, l0) or
-                    nl_continuous_loop_remove(puzzle, l1)):
-                    constrained = True
     return constrained
 
 

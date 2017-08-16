@@ -211,6 +211,8 @@ class Link(object):
            or is_col_strong_link(
                self.puzzle, self.from_idx, self.to_idx, self.value):
             self.strong = True
+            return True
+
 
 
 class Chain(object):

@@ -6,19 +6,6 @@ from models import Index
 from test_fixtures import *
 
 
-def test_strong_links_cols(niceloop_puzzle0):
-    p = niceloop_puzzle0
-    from_idx = Index(row=3,col=6)
-    cols = set(constraints.col_strong_links(p, from_idx))
-    assert "[R3C6]=6=[R6C6]" in [str(i) for i in cols]
-
-
-def test_strong_links_rows(niceloop_puzzle0):
-    p = niceloop_puzzle0
-    from_idx = Index(row=0,col=4)
-    rows = set(constraints.row_strong_links(p, from_idx))
-    assert "[R0C4]=8=[R0C8]" in [str(i) for i in rows]
-
 #def test_nice_loop(niceloop_puzzle0):
 #    p = niceloop_puzzle0
 #    print "Finding loops"
@@ -30,10 +17,10 @@ def test_strong_links_rows(niceloop_puzzle0):
 def test_solve(niceloop_puzzle0, niceloop_puzzle1, niceloop_puzzle2,
                niceloop_puzzle3):
     pass
-    # print niceloop_puzzle0.solve()
-    # print niceloop_puzzle1.solve()
-    # print niceloop_puzzle2.solve()
-    # print niceloop_puzzle3.solve()
+    print niceloop_puzzle0.solve()
+    print niceloop_puzzle1.solve()
+    print niceloop_puzzle2.solve()
+    print niceloop_puzzle3.solve()
 
 
 # http://sudopedia.enjoysudoku.com/Nice_Loop.html numer 1
@@ -49,7 +36,7 @@ def test_nl_discontinuity1(niceloop_discon1):
     assert found
     pos = p.get_possibilities(idx)
     before = p.make_clone()
-    assert constraints.nice_loop_constrainer(p, found)
+    assert constraints.nice_loop_constrainer_discont(p, found)
     assert set([1, 3, 9]) == pos
     afterpos = p.get_possibilities(idx)
     assert 1 not in afterpos
@@ -83,7 +70,7 @@ def test_nl_discontinuity3(niceloop_discon3):
     print found
     pos = p.get_possibilities(idx)
     before = p.make_clone()
-    assert constraints.nice_loop_constrainer(p, found)
+    assert constraints.nice_loop_constrainer_discont(p, found)
     assert set([5, 6, 7]) == pos
     afterpos = p.get_possibilities(idx)
     assert 7 not in afterpos
@@ -108,13 +95,34 @@ def test_nl_discontinuity2(niceloop_discon2):
     print found
     pos = p.get_possibilities(idx)
     before = p.make_clone()
-    assert constraints.nice_loop_constrainer(p, found)
+    assert constraints.nice_loop_constrainer_discont(p, found)
     assert set([3, 5, 8, 9]) == pos
     afterpos = p.get_possibilities(idx)
     ans = set([8])
-    assert ans == afterpos
+    assert ans == afterpos, "%s" % p
     idxs = set(models.puzzle_range) - set([idx])
     for i in idxs:
         assert before.get_possibilities(i) == p.get_possibilities(i) or \
             before.get_possibilities(i)-ans == p.get_possibilities(i),\
             "%s %s %s" % (i, p, p.index_solved(i))
+
+# http://sudopedia.enjoysudoku.com/Nice_Loop.html #4
+def test_nl_cont1(niceloop_cont1):
+    p = niceloop_cont1
+    find = "[r0c4]=4=[r8c4]=7=[r8c8]-7-[r2c8]-4-[r2c1]=4=[r0c0]-4-[r0c4]"
+    found = False
+    idx = Index(0, 4)
+    for i in constraints.nice_loops_starting_at(p, idx):
+        assert len(i) < 8, "%s" % p.print_help()
+        if loop_matcher(find, str(i)):
+            found = i
+            break
+    assert found
+    print found
+    before = p.make_clone()
+    assert constraints.nice_loop_constrainer_cont(p, found)
+    assert set([2, 4, 5, 7]) == before.get_possibilities(Index(1, 8))
+    assert 7 not in p.get_possibilities(Index(1, 8))
+    assert 4 not in p.get_possibilities(Index(2, 3))
+    assert set([4, 7]) == p.get_possibilities(Index(8, 4))
+    print p.print_help()
