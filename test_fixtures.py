@@ -127,10 +127,12 @@ def niceloop_puzzle3(niceloop_puzzle3_sol):
     return P
 
 
+##  http://sudopedia.enjoysudoku.com/Nice_Loop.html
+
 @pytest.fixture
 def niceloop_discon1():
     p = """
-6.7.52.4..
+6.752.4..
 54..6..7.
 .2.497.5.
 .7524...1
@@ -139,6 +141,39 @@ def niceloop_discon1():
 48...2.95
 75..1...4
 ..6.547.8
+"""
+    P = sudoku.read_puzzle(p)
+    return P
+
+@pytest.fixture
+def niceloop_discon2():
+    p = """
+8.93..2..
+.1.2.8..6
+2..15..87
+...6..4..
+7..9.15.8
+..24.....
+6..84....
+5..7..83.
+..85.26..
+"""
+    P = sudoku.read_puzzle(p)
+    return P
+
+
+@pytest.fixture
+def niceloop_discon3():
+    p = """
+.831.2..4
+.2..8.3..
+491637582
+..876.25.
+..5.28..7
+27....84.
+85427..3.
+132.4.7.8
+.6.813425
 """
     P = sudoku.read_puzzle(p)
     return P

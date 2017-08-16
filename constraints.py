@@ -4,6 +4,7 @@ from itertools import combinations, groupby
 import models
 from models import PVALS, PIDXS, square_idxs, \
     share_a_row, share_a_col, share_a_square
+from collections import deque
 
 
 def are_distinct_sets(x, y):
@@ -369,7 +370,7 @@ def x_chain(puzzle):
     pass
 
 
-def weak_links(puzzle, from_idx):
+def weak_links(puzzle, from_idx, strong_too=True):
     def pos(*x):
         return puzzle.get_possibilities(*x)
     from_pos = pos(from_idx)
@@ -378,8 +379,9 @@ def weak_links(puzzle, from_idx):
         to_pos = pos(to)
         vals = from_pos & to_pos
         for v in vals:
-            #TODO: dont yield strong links ?
             l = models.Link(puzzle, from_idx, to, v, False, from_pos)
+            if l.strong and not strong_too:
+                continue
             yield l
 
 
@@ -457,43 +459,36 @@ def nl_2strong(l0, l1):
 
 
 def nl_2weak(l0, l1):
-    return not l0.strong and not l1.strong and \
-        l0.value != l1.value and \
+    # not l0.strong and not l1.strong and \ ## every strong is weak
+    return l0.value != l1.value and \
         len(l1.possibilities) == 2
 
 
 def nl_weakstrong(l0, l1):
-    return l0.strong != l1.strong and l0.value == l1.value
+    return any([l0.strong, l1.strong]) and l0.value == l1.value
 
 
 def nice_loops_starting_at(puzzle, from_idx):
-    chains = []
+    chains = deque([[i] for i in weak_links(puzzle, from_idx)])
 
-    def nl_rec(idx, prev_link=None, chain=[]):
-        for lnk in weak_links(puzzle, idx):
-            def deeper():
-                if lnk.to_idx not in [c.from_idx for c in chain]:
-                    nl_rec(lnk.to_idx, lnk, chain+[lnk])
-            if not prev_link:
-                if lnk.strong:
-                    deeper()
-                else:
-                    continue
-            else:
-                if len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
-                    chains.append(chain+[lnk])
-                elif prev_link.same_indexes(lnk):
-                    continue
-                #  two strong links - diff valus
-                elif nl_2strong(prev_link, lnk):
-                    deeper()
-                #  two weak links - diff vals
-                elif nl_2weak(prev_link, lnk):
-                    deeper()
-                #  one weak one strong - diff vals and bivalue
-                elif nl_weakstrong(prev_link, lnk):
-                    deeper()
-
+    def do_chain(chain):
+        prev_link = chain[-1]
+        for lnk in weak_links(puzzle, prev_link.to_idx):
+            #found a yield able chain
+            if len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
+                yield chain+[lnk]
+            #  dont go back
+            elif prev_link.same_indexes(lnk):
+                continue
+            #  two strong links - diff valus
+            elif nl_2strong(prev_link, lnk):
+                chains.append(chain+[lnk])
+            #  two weak links - diff vals
+            elif nl_2weak(prev_link, lnk):
+                chains.append(chain+[lnk])
+            #  one weak one strong - diff vals and bivalue
+            elif nl_weakstrong(prev_link, lnk):
+                chains.append(chain+[lnk])
     #  If a square has two weak links, then it must be bivalue (two
     #  candidates) and the link candidates must be different.
 
@@ -502,9 +497,11 @@ def nice_loops_starting_at(puzzle, from_idx):
 
     #  If a square has one strong and one weak link (in either
     #  combination), then the link candidates must be the same.
-    nl_rec(from_idx)
-    for it in chains:
-        yield models.NiceLoop(puzzle, it)
+    while len(chains) > 0:
+        c = chains.popleft()
+        for it in do_chain(c):
+            yield models.NiceLoop(puzzle, it)
+
 
 
 def nl_continuous_loop_remove(puzzle, lnk):
@@ -527,41 +524,41 @@ def nice_loop_constrainer(puzzle, loop):
     constrained = False
     first, last = loop.links[0], loop.links[-1]
 
-    # # Type1 Discontinous Chain
-    # if not last.strong and not first.strong and \
-    #    first.value == last.value:
-    #     if puzzle.remove_index_possibilities(first.from_idx, first.value):
-    #         puzzle.stats.inc('nice_loops (rem D1)')
-    #         puzzle.stats.inc('nice_loops')
-    #         constrained = True
+    # Type1 Discontinous Chain
+    if not last.strong and not first.strong and \
+       first.value == last.value:
+        if puzzle.remove_index_possibilities(first.from_idx, first.value):
+            puzzle.stats.inc('nice_loops (rem D1)')
+            puzzle.stats.inc('nice_loops')
+            constrained = True
 
-    # # Type2 Discontinous Chain
-    # elif first.value == last.value and first.strong and last.strong:
-    #     if puzzle.set_index_possibilities(first.from_idx, set([first.value])):
-    #         puzzle.stats.inc('nice_loops (set D2)')
-    #         puzzle.stats.inc('nice_loops')
-    #         constrained = True
+    # Type2 Discontinous Chain
+    elif first.value == last.value and first.strong and last.strong:
+        if puzzle.set_index_possibilities(first.from_idx, set([first.value])):
+            puzzle.stats.inc('nice_loops (set D2)')
+            puzzle.stats.inc('nice_loops')
+            constrained = True
 
-    # # Type3 Discontinous v1
-    # elif last.value != first.value:
-    #     # first is weak, remove its value
-    #     if not first.strong and last.strong:
-    #         if puzzle.remove_index_possibilities(
-    #                 first.from_idx, first.value):
-    #             puzzle.stats.inc('nice_loops')
-    #             puzzle.stats.inc('nice_loops (rem D3-1)')
-    #             constrained = True
-    #     # last is weak, remove its value
-    #     elif first.strong and not last.strong:
-    #         if puzzle.remove_index_possibilities(
-    #                 first.from_idx, last.value):
-    #             puzzle.stats.inc('nice_loops')
-    #             puzzle.stats.inc('nice_loops (rem D3-2)')
-    #             constrained = True
+    # Type3 Discontinous v1
+    elif last.value != first.value:
+        # first is weak, remove its value
+        if not first.strong and last.strong:
+            if puzzle.remove_index_possibilities(
+                    first.from_idx, first.value):
+                puzzle.stats.inc('nice_loops')
+                puzzle.stats.inc('nice_loops (rem D3-1)')
+                constrained = True
+        # last is weak, remove its value
+        elif first.strong and not last.strong:
+            if puzzle.remove_index_possibilities(
+                    first.from_idx, last.value):
+                puzzle.stats.inc('nice_loops')
+                puzzle.stats.inc('nice_loops (rem D3-2)')
+                constrained = True
 
     # Continuous
-    if (nl_weakstrong(first, last) or nl_2weak(first, last)
-          or nl_2strong(first, last)):
+    elif (nl_weakstrong(last, first) or nl_2weak(last, first)
+          or nl_2strong(last, first)):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
             if nl_2strong(l0, l1):

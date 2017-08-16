@@ -230,6 +230,9 @@ class Chain(object):
             out += str(l)[6:]
         return out
 
+    def __len__(self):
+        return len(self.links)
+
 
 class NiceLoop(Chain):
     #  http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
