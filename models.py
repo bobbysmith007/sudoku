@@ -1,8 +1,11 @@
+import logging
 from StringIO import StringIO
 from copy import deepcopy
 
 PVALS = set(range(1, 10))
 PIDXS = set(range(0, 9))
+
+log = logging.getLogger('sudoku')
 
 
 class Index (object):
@@ -120,8 +123,11 @@ class Stats (object):
         else:
             val = getattr(self,k,0)+v
             setattr(self, k, val)
-            print k, val
+            log.debug('Stats %s : %s', k, v)
             return val
+
+    def get(self, k):
+        return getattr(self, k, 0)
 
     def __str__ (self):
         s = StringIO()

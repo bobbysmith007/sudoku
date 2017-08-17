@@ -6,21 +6,28 @@ from models import Index
 from test_fixtures import *
 
 
-#def test_nice_loop(niceloop_puzzle0):
-#    p = niceloop_puzzle0
-#    print "Finding loops"
-#    for idx in p.free_idxs():
-#        for loop in constraints.nice_loops_starting_at(p, idx):
-#            print "Loop at: ", loop
+def sol(p):
+    try:
+        print p.solve()
+    except Exception, e:
+        print e
+        assert False, "Shouldnt get an error %s" % e
 
 
-def test_solve(niceloop_puzzle0, niceloop_puzzle1, niceloop_puzzle2,
-               niceloop_puzzle3):
-    pass
-    print niceloop_puzzle0.solve()
-    print niceloop_puzzle1.solve()
-    print niceloop_puzzle2.solve()
-    print niceloop_puzzle3.solve()
+def test_solve0(niceloop_puzzle0):
+    sol(niceloop_puzzle0)
+
+
+def test_solve1(niceloop_puzzle1):
+    sol(niceloop_puzzle1)
+
+
+def test_solve2(niceloop_puzzle2):
+    sol(niceloop_puzzle2)
+
+
+def test_solve3(niceloop_puzzle3):
+    sol(niceloop_puzzle3)
 
 
 # http://sudopedia.enjoysudoku.com/Nice_Loop.html numer 1
@@ -125,4 +132,11 @@ def test_nl_cont1(niceloop_cont1):
     assert 7 not in p.get_possibilities(Index(1, 8))
     assert 4 not in p.get_possibilities(Index(2, 3))
     assert set([4, 7]) == p.get_possibilities(Index(8, 4))
+
+    idxs = set(models.puzzle_range) - \
+           set([Index(1, 8), Index(2, 3), Index(8, 4)])
+    for i in idxs:
+        assert before.get_possibilities(i) == p.get_possibilities(i), \
+            "%s %s %s" % (i, p, p.index_solved(i))
+
     print p.print_help()

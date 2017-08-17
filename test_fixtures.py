@@ -4,7 +4,22 @@ from models import Index
 import pytest
 
 @pytest.fixture
-def niceloop_puzzle0():
+def niceloop_puzzle0_sol():
+    p = """
+562987431
+748613529
+391542768
+457139682
+289476315
+613825947
+924761853
+835294176
+176358294
+"""
+    return sudoku.read_puzzle(p)
+
+@pytest.fixture
+def niceloop_puzzle0(niceloop_puzzle0_sol):
     p = """
 ...9..4...
 ..8.1.5..
@@ -16,7 +31,14 @@ def niceloop_puzzle0():
 ..5.9.1..
 1.6..8...
 """
-    return sudoku.read_puzzle(p)
+    P = sudoku.read_puzzle(p)
+    P.solution = niceloop_puzzle0_sol
+    return P
+
+def niceloop_p0():
+    P = niceloop_puzzle0(niceloop_puzzle0_sol())
+    P.stepByStep = True
+    return P.solve()
 
 @pytest.fixture
 def niceloop_puzzle1_sol():
@@ -50,6 +72,10 @@ def niceloop_puzzle1(niceloop_puzzle1_sol):
     P = sudoku.read_puzzle(p)
     P.solution = niceloop_puzzle1_sol
     return P
+
+
+def niceloop_p1():
+    return niceloop_puzzle0(niceloop_puzzle1_sol())
 
 
 @pytest.fixture

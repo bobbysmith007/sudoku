@@ -6,6 +6,7 @@ from models import PVALS, PIDXS, square_idxs, \
     share_a_row, share_a_col, share_a_square
 from collections import deque
 
+log = logging.getLogger('sudoku')
 
 def are_distinct_sets(x, y):
     return len(x & y) == 0
@@ -411,18 +412,25 @@ def alternating_chains(puzzle):
 
 
 def nl_2strong(l0, l1):
-    return l0.strong and l1.strong and \
-        l0.value != l1.value
+    ans = l0.strong and l1.strong and l0.value != l1.value
+    if ans:
+        log.debug("2strong, l1:%s", l1)
+    return ans
 
 
 def nl_2weak(l0, l1):
     # not l0.strong and not l1.strong and \ ## every strong is weak
-    return l0.value != l1.value and \
-        len(l1.possibilities) == 2
+    ans = l0.value != l1.value and len(l1.possibilities) == 2
+    if ans:
+        log.debug("2weak, l1:%s , l1.pos:%s", l1.from_idx, l1.possibilities)
+    return ans
 
 
 def nl_weakstrong(l0, l1):
-    return any([l0.strong, l1.strong]) and l0.value == l1.value
+    ans = any([l0.strong, l1.strong]) and l0.value == l1.value
+    if ans:
+        log.debug("weakstrong, %s %s", l0, l1)
+    return ans
 
 
 def nice_loops_starting_at(puzzle, from_idx):
@@ -431,8 +439,12 @@ def nice_loops_starting_at(puzzle, from_idx):
     def do_chain(chain):
         prev_link = chain[-1]
         for lnk in weak_links(puzzle, prev_link.to_idx):
+            # TODO: Is this check needed?
+            # we dont want to loop back into our chain
+            if lnk.to_idx in [l.from_idx for l in chain[1:]]:
+                continue
             # found a yield able chain
-            if len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
+            elif len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
                 yield chain+[lnk]
             #  dont go back
             elif prev_link.same_indexes(lnk):
@@ -477,15 +489,18 @@ def nl_continuous_loop_remove(puzzle, lnk):
     return constrained
 
 def nice_loop_constrainer(puzzle, loop):
-    it = False
-    it = nice_loop_constrainer_cont(puzzle, loop) or it
-    if it:
+    try:
+        it = False
+        it = nice_loop_constrainer_cont(puzzle, loop) or it
+        if it:
+            return it
+        it = nice_loop_constrainer_discont(puzzle, loop) or it
+        if it:
+            return it
         return it
-    it = nice_loop_constrainer_discont(puzzle, loop) or it
-    if it:
-        return it
-    return it
-
+    except Exception, e:
+        log.exception('Nice loop constrainer failed on %s \n%s', loop, puzzle)
+        raise e
 
 
 def nice_loop_constrainer_cont(puzzle, loop):
@@ -568,10 +583,13 @@ def xy_wing(puzzle):
         Implements the XY-wing sudoku strategy
         http://www.sudopedia.org/wiki/XY-Wing
     """
-    free = lambda x:puzzle.free_related_cells(x)
-    pos = lambda x:puzzle.get_possibilities(x)
+    def free(x):
+        puzzle.free_related_cells(x)
 
-    xy_links = (((i1,i2,i3),p1&p3)
+    def pos(x):
+        puzzle.get_possibilities(x)
+
+    xy_links = (((i1, i2, i3), p1 & p3)
                  for i1 in list(puzzle.unsolved_idxs)
                  for p1 in [pos(i1)]
                  for i2 in free(i1)-set([i1])

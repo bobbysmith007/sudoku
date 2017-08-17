@@ -8,7 +8,8 @@ import models
 from models import PVALS, PIDXS, Index, puzzle_range, square_idxs, square
 import constraints, traceback
 
-logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('sudoku')
+logging.basicConfig(level=logging.DEBUG)
 
 
 def tryint(v):
@@ -21,7 +22,7 @@ def tryint(v):
 class SudokuPuzzle (object):
     def __init__(self, puzzle, parent=None, depth=1,
                  start=None, unsolved_idxs=None, possibility_hash=None,
-                 stats=None, solution=None):
+                 stats=None, solution=None, stepByStep=False):
         self.stats = stats or models.Stats(puzzle_branches=1,
                                            constraint_steps=0)
         self.puzzle = puzzle
@@ -32,6 +33,7 @@ class SudokuPuzzle (object):
         self.possibility_hash = possibility_hash or self.init_pos_hash()
         self.solution = solution
         self._current_constraint = None
+        self.stepByStep = stepByStep
 
     def check_solution(self):
         if not self.solution:
@@ -42,7 +44,8 @@ class SudokuPuzzle (object):
                 pos = self.get_possibilities(idx)
                 sol = self.solution.index_solved(idx)
                 if sol not in pos:
-                    raise Exception("Last constraint step an error")
+                    raise Exception("Last constraint step an error at %s %s\n%s",
+                                    idx, self._current_constraint, self.print_help())
         return True
 
     def init_pos_hash(self):
@@ -152,10 +155,13 @@ class SudokuPuzzle (object):
             self.stats.inc('constraint_steps')
             self._solved_this_cycle = False
             self._constrained_this_cycle = False
+            if self.stepByStep:
+                log.info('Constrainer Step: %d\n %s\n ---- \n',
+                         self.stats.get('constraint_steps'),
+                         self.print_help())
             for con in constraints.constraintsToRun:
                 self._current_constraint = con
                 con(self)
-                self.check_solution()
                 if self._constrained_this_cycle or self._solved_this_cycle:
                     return True
         while(do()):
@@ -238,6 +244,7 @@ class SudokuPuzzle (object):
         if old != pos:
             self._constrained_this_cycle = True
             constrained_this_set = True
+            self.check_solution()
         return constrained_this_set
 
     def remove_index_possibilities(self, idx, pos):
