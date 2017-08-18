@@ -14,20 +14,34 @@ def sol(p):
         assert False, "Shouldnt get an error %s" % e
 
 
-def test_solve0(niceloop_puzzle0):
-    sol(niceloop_puzzle0)
+def test_read_write(niceloop_puzzle0):
+    P = niceloop_puzzle0
+    ps = P.print_solutions()
+    P1 = sudoku.read_puzzle(ps)
+    assert ps == P1.print_solutions()
 
 
-def test_solve1(niceloop_puzzle1):
-     sol(niceloop_puzzle1)
+def test_read_write_pos(niceloop_puzzle0):
+    P = niceloop_puzzle0
+    ps = P.print_possibilities()
+    P1 = sudoku.read_possibilities(ps)
+    assert ps == P1.print_possibilities()
 
 
-def test_solve2(niceloop_puzzle2):
-    sol(niceloop_puzzle2)
+# def test_solve0(niceloop_puzzle0):
+#     sol(niceloop_puzzle0)
 
 
-def test_solve3(niceloop_puzzle3):
-    sol(niceloop_puzzle3)
+# def test_solve1(niceloop_puzzle1):
+#      sol(niceloop_puzzle1)
+
+
+# def test_solve2(niceloop_puzzle2):
+#     sol(niceloop_puzzle2)
+
+
+# def test_solve3(niceloop_puzzle3):
+#     sol(niceloop_puzzle3)
 
 
 # http://sudopedia.enjoysudoku.com/Nice_Loop.html numer 1
@@ -138,7 +152,6 @@ def test_nl_cont1(niceloop_cont1):
     for i in idxs:
         assert before.get_possibilities(i) == p.get_possibilities(i), \
             "%s %s %s" % (i, p, p.index_solved(i))
-
 
 
 #http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm

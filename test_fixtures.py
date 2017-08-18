@@ -21,7 +21,7 @@ def niceloop_puzzle0_sol():
 @pytest.fixture
 def niceloop_puzzle0(niceloop_puzzle0_sol):
     p = """
-...9..4...
+...9..4..
 ..8.1.5..
 3....2.6.
 ..71.9.8.

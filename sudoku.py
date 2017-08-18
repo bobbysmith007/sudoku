@@ -279,12 +279,12 @@ class SudokuPuzzle (object):
             s.write('Unsolved Puzzle:\n')
         s.write(str(self.stats))
         return s.getvalue()
+    
+    sol_lb = "-------------------------------\n"
 
-    def __str__(self):
+    def print_solutions(self):
         s = StringIO()
-        s.write("-------------------------------\n")
-        s.write(self.status())
-        s.write("-------------------------------\n")
+        s.write(self.sol_lb)
         for i in PIDXS:
             s.write('|')
             for j in PIDXS:
@@ -298,17 +298,23 @@ class SudokuPuzzle (object):
                     s.write('|')
             s.write('\n')
             if i % 3 == 2:
-                s.write("-------------------------------\n")
+                s.write(self.sol_lb)
+        return s.getvalue()
+    
+    def __str__(self):
+        s = StringIO()
+        s.write(self.sol_lb)
+        s.write(self.status())
+        s.write(self.print_solutions())
         return s.getvalue()
 
-    def print_help(self):
-        lb = "-------------------------------"\
-            "---------------------------------"\
-            "-------------------------------\n"
+    pos_lb = "-------------------------------"\
+        "---------------------------------"\
+        "-------------------------------\n"
+
+    def print_possibilities(self):
         s = StringIO()
-        s.write(lb)
-        s.write(self.status())
-        s.write(lb)
+        s.write(self.pos_lb)
         for i in PIDXS:
             s.write('||')
             for j in PIDXS:
@@ -324,20 +330,50 @@ class SudokuPuzzle (object):
                     s.write('|')
             s.write('\n')
             if i % 3 == 2:
-                s.write(lb)
+                s.write(self.pos_lb)
+        return s.getvalue()
+
+    def print_help(self):
+        s = StringIO()
+        s.write(self.pos_lb)
+        s.write(self.status())
+        s.write(self.pos_lb)
+        s.write(self.print_possibilities())
         return s.getvalue()
 
 
 def read_puzzle(s):
-
     # skip first/last line
-    s = re.sub(r'\n\n+', '\n', re.sub(r'-|\+|\|| |,', "", s))
-    partial_sol = [i for i in s.splitlines() if i.strip()]
+    s = re.sub(r'\n\n+', '\n', re.sub(r'\s|-|\+|\|| |,', "", s))
+    def get(i, j):
+        idx = j + ((i*max(PIDXS)) + i)
+        if len(s) > idx:
+            return tryint(s[idx])
+    puzzle = SudokuPuzzle([[get(i, j) for j in PIDXS] for i in PIDXS])
+    # print puzzle
+    return puzzle
+
+
+def read_possibilities(s):
+    puzzle = SudokuPuzzle([[None for i in PIDXS] for j in PIDXS])
+    s = re.sub('\|\|+', '|', s)
+    s = re.sub('[^0-9\.\|\n]', '', s)
+    s = re.sub('\n\n+', '\n', s)
+    s = [[m for m in l.split('|')
+          if len(m.strip()) > 0]
+         for l in s.splitlines()
+         if len(l.strip()) > 0]
     
     def get(i, j):
-        if len(partial_sol) > i and len(partial_sol[i]) > j:
-            return tryint(partial_sol[i][j])
-    puzzle = SudokuPuzzle([[get(i, j) for j in PIDXS] for i in PIDXS])
+        posS = s[i][j]
+        pos = set()
+        for c in posS:
+            it = tryint(c)
+            if it:
+                pos.add(it)
+        return pos
+    for idx in puzzle_range:
+        puzzle.set_index_possibilities(idx, get(idx.row, idx.col))
     # print puzzle
     return puzzle
 
