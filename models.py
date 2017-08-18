@@ -222,7 +222,8 @@ class Link(object):
 
 
 class Chain(object):
-    def __init__(self, links=[]):
+    def __init__(self, puzzle, links=[]):
+        self.puzzle = puzzle
         self.links = links
 
     def push(self, link):
@@ -241,10 +242,47 @@ class Chain(object):
     def __len__(self):
         return len(self.links)
 
+def nl_2strong(p, l0, l1):
+    ans = l0.strong and l1.strong and l0.value != l1.value
+    #if ans: log.debug("2strong, l1:%s", l1)
+    return ans
+
+
+def nl_2weak(p, l0, l1):
+    ans = not l0.strong and not l1.strong and \
+          l0.value != l1.value and len(p.get_possibilities(l1.from_idx)) == 2
+    #if ans: log.debug("2weak, l1:%s , l1.pos:%s", l1.from_idx, l1.possibilities)
+    return ans
+
+
+def nl_weakstrong(p, l0, l1):
+    ans = l0.strong != l1.strong and l0.value == l1.value
+    #if ans: log.debug("weakstrong, %s %s", l0, l1)
+    return ans
+
 
 class NiceLoop(Chain):
     #  http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
     def __init__(self, puzzle, links=[]):
-        super(NiceLoop, self).__init__(links)
+        super(NiceLoop, self).__init__(puzzle, links)
         if links[-1].to_idx != links[0].from_idx:
             raise Exception('Invalid NiceLoop %s' % (self))
+        self.continuous = self.is_continuous()
+        # TODO: validate links
+
+    def is_continuous(self):
+        i = 0
+        l0 = self.links[-1]
+        cont = True
+        for l1 in self.links[:-1]:
+            if (not nl_weakstrong(self.puzzle, l0, l1)
+                and not nl_2weak(self.puzzle, l0, l1)
+                and not nl_2strong(self.puzzle, l0, l1)):
+                cont = False
+                if i > 0:
+                    raise Exception(
+                        "Not a valid niceloop (discontinuity at %s %s, %s)",
+                        l0, l1, i)
+            l0 = l1
+            i += 1
+        return cont

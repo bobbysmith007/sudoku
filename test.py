@@ -7,10 +7,11 @@ from test_fixtures import *
 
 
 def sol(p):
+    c = p.make_clone()
     try:
         print p.solve()
     except Exception, e:
-        print e
+        print "\nBefore Error: \n", c.print_possibilities()
         assert False, "Shouldnt get an error %s" % e
 
 
@@ -28,20 +29,20 @@ def test_read_write_pos(niceloop_puzzle0):
     assert ps == P1.print_possibilities()
 
 
-# def test_solve0(niceloop_puzzle0):
-#     sol(niceloop_puzzle0)
+def test_solve0(niceloop_puzzle0):
+    sol(niceloop_puzzle0)
 
 
-# def test_solve1(niceloop_puzzle1):
-#      sol(niceloop_puzzle1)
+def test_solve1(niceloop_puzzle1):
+     sol(niceloop_puzzle1)
 
 
-# def test_solve2(niceloop_puzzle2):
-#     sol(niceloop_puzzle2)
+def test_solve2(niceloop_puzzle2):
+    sol(niceloop_puzzle2)
 
 
-# def test_solve3(niceloop_puzzle3):
-#     sol(niceloop_puzzle3)
+def test_solve3(niceloop_puzzle3):
+    sol(niceloop_puzzle3)
 
 
 # http://sudopedia.enjoysudoku.com/Nice_Loop.html numer 1
@@ -50,6 +51,7 @@ def test_nl_discontinuity1(niceloop_discon1):
     find = "[R0C1]-1-[R2C0]=1=[R8C0]=2=[R8C7]=1=[R0C7]-1-[R0C1]"
     found = False
     idx = Index(0, 1)
+    print p.print_possibilities
     for i in constraints.nice_loops_starting_at(p, idx):
         if str(i) == find:
             found = i
@@ -67,13 +69,13 @@ def test_nl_discontinuity1(niceloop_discon1):
 
 
 def loop_matcher(needle, hay):
-    it = re.escape(needle).replace('\\-', '[=-]')
+    it = re.escape(needle)
     needle = re.compile(it, re.I)
     return needle.search(hay)
 
 def test_loop_matcher():
-    find = "[R0C0]=5=[R0C4]-5-[R5C4]-9-[R5C2]-6-[R1C2]-7-[R0C0]"
-    found = "[R0C0]=5=[R0C4]=5=[R5C4]-9-[R5C2]=6=[R1C2]-7-[R0C0]"
+    find = "[r0c0]=5=[r0c4]-5-[r5c4]-9-[r5c2]=6=[r1c2]-7-[r0c0]"
+    found = "[R0C0]=5=[R0C4]-5-[R5C4]-9-[R5C2]=6=[R1C2]-7-[R0C0]"
     assert loop_matcher(find, found)
 
 
@@ -176,3 +178,37 @@ def test_nl_sf_replace(niceloop_puzzle4_1):
     for i in idxs:
         assert before.get_possibilities(i) == p.get_possibilities(i), \
             "%s %s %s" % (i, p, p.index_solved(i))
+
+
+def test_no_bad_nice_loops(niceloop_puzzle0_1):
+    p= niceloop_puzzle0_1
+    dontFind = "[R0C4]=8=[R0C8]-8-[R2C6]-7-[R2C4]-8-[R0C4]"
+    found = False
+    idx = Index(0, 4)
+    for i in constraints.nice_loops_starting_at(p, idx):
+        assert len(i) < 8, "%s" % p.print_help()
+        if loop_matcher(dontFind, str(i)):
+            found = i
+            break
+    bad = Index(2,4)
+    lnk = found and found.links[2]
+    assert not found, "%s %s, %s %s shouldnt be in the chain" % \
+        (bad, p.get_possibilities(bad), lnk, lnk and p.get_possibilities(lnk.to_idx))
+    return
+
+
+# def test_no_bad_nice_loops2(niceloop_puzzle0_2):
+#     p= niceloop_puzzle0_2
+#     dontFind = "[R0C4]=8=[R0C8]-8-[R2C6]=8=[R6C6]=6=[R6C4]=6=[R0C4]"
+#     found = False
+#     idx = Index(0, 4)
+#     for i in constraints.nice_loops_starting_at(p, idx):
+#         assert len(i) < 8, "%s" % p.print_help()
+#         if loop_matcher(dontFind, str(i)):
+#             found = i
+#             break
+#     bad = Index(2,4)
+#     lnk = found and found.links[2]
+#     assert not found, "%s %s, %s %s shouldnt be in the chain" % \
+#         (bad, p.get_possibilities(bad), lnk, lnk and p.get_possibilities(lnk.to_idx))
+#     return

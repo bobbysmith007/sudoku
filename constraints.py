@@ -421,34 +421,23 @@ def alternating_chains(puzzle):
             yield chain
 
 
-def nl_2strong(l0, l1):
-    ans = l0.strong and l1.strong and l0.value != l1.value
-    #if ans: log.debug("2strong, l1:%s", l1)
-    return ans
 
 
-def nl_2weak(l0, l1):
-    ## every strong is weak
-    ans = not l0.strong and not l1.strong and \
-          l0.value != l1.value and len(l1.possibilities) == 2
-    #if ans: log.debug("2weak, l1:%s , l1.pos:%s", l1.from_idx, l1.possibilities)
-    return ans
-
-
-def nl_weakstrong(l0, l1):
-    ans = l0.strong != l1.strong and l0.value == l1.value
-    #if ans: log.debug("weakstrong, %s %s", l0, l1)
-    return ans
+def nice_links(puzzle, idx, startIdx=None):
+    for l in weak_links(puzzle, idx):
+        if (l.strong or len(puzzle.get_possibilities(l.to_idx)) == 2
+            # allows building discontinuous loops
+            or (not startIdx or l.to_idx == startIdx)):
+            yield l
 
 
 def nice_loops_starting_at(puzzle, from_idx):
-    chains = deque(
-        [[i] for i in weak_links(puzzle, from_idx)
-         if i.strong or len(puzzle.get_possibilities(i.to_idx)) == 2])
+    chains = deque([[i] for i in nice_links(puzzle, from_idx)])
 
     def do_chain(chain):
         prev_link = chain[-1]
-        for lnk in weak_links(puzzle, prev_link.to_idx):
+        #  print models.Chain(puzzle, chain)
+        for lnk in nice_links(puzzle, prev_link.to_idx, from_idx):
             # TODO: Is this check needed?
             # we dont want to loop back into our chain
             if lnk.to_idx in [l.from_idx for l in chain[1:]]:
@@ -460,13 +449,14 @@ def nice_loops_starting_at(puzzle, from_idx):
             elif len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
                 yield chain+[lnk]
             #  two strong links - diff valus
-            elif nl_2strong(prev_link, lnk):
+            elif models.nl_2strong(puzzle, prev_link, lnk):
                 chains.append(chain+[lnk])
             #  two weak links - diff vals
-            elif nl_2weak(prev_link, lnk):
+            elif models.nl_2weak(puzzle, prev_link, lnk):
+
                 chains.append(chain+[lnk])
             #  one weak one strong - diff vals and bivalue
-            elif nl_weakstrong(prev_link, lnk):
+            elif models.nl_weakstrong(puzzle, prev_link, lnk):
                 chains.append(chain+[lnk])
     #  If a square has two weak links, then it must be bivalue (two
     #  candidates) and the link candidates must be different.
@@ -499,16 +489,15 @@ def nl_continuous_loop_remove(puzzle, lnk):
     return constrained
 
 def nice_loop_constrainer(puzzle, loop):
-    log.info("Constraining %s", loop)
+    log.info("Constraining NL (Cont: %s),  %s", loop.continuous, loop)
     try:
-        it = False
-        it = nice_loop_constrainer_cont(puzzle, loop) or it
-        if it:
-            return it
-        it = nice_loop_constrainer_discont(puzzle, loop) or it
-        if it:
-            return it
-        return it
+        if loop.continuous:
+            if nice_loop_constrainer_cont(puzzle, loop):
+                return True
+        else:
+            if nice_loop_constrainer_discont(puzzle, loop):
+                return True
+        return False
     except Exception, e:
         log.exception('Nice loop constrainer failed on %s \n%s', loop, puzzle)
         raise e
@@ -517,11 +506,12 @@ def nice_loop_constrainer(puzzle, loop):
 def nice_loop_constrainer_cont(puzzle, loop):
     constrained = False
     first, last = loop.links[0], loop.links[-1]
-    if (nl_weakstrong(last, first) or nl_2weak(last, first) or
-          nl_2strong(last, first)):
+    if (models.nl_weakstrong(puzzle, last, first) or
+        models.nl_2weak(puzzle, last, first) or
+        models.nl_2strong(puzzle, last, first)):
         for i in range(0, len(loop.links)):
             l0, l1 = loop.links[i-1], loop.links[i]
-            if nl_2strong(l0, l1):
+            if models.nl_2strong(puzzle, l0, l1):
                 print loop, l0, l1
                 if puzzle.set_index_possibilities(
                         l0.to_idx, set([l0.value, l1.value])):
