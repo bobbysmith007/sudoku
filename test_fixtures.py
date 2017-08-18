@@ -236,3 +236,37 @@ def niceloop_cont1():
     P.set_index_possibilities(Index(8, 4), set([2, 4, 7]))
     P.set_index_possibilities(Index(8, 8), set([1, 2, 7, 9]))
     return P
+
+
+@pytest.fixture
+def niceloop_puzzle4():
+    p = """
+..9.2.3..
+..21..9.8
+..68....1
+..361..9.
+.9.....8.
+.5..391..
+3....78..
+4.7..16..
+..8.5.4..
+"""
+    P = sudoku.read_puzzle(p)
+    return P
+
+
+@pytest.fixture
+def niceloop_puzzle4_1():
+    p = """
+189.2.3..
+..21..9.8
+..689...1
+273618594
+691....83
+854.391..
+3.5..78..
+427.816..
+9.8.5.4..
+"""
+    P = sudoku.read_puzzle(p)
+    return P

@@ -190,7 +190,7 @@ class Link(object):
             setattr(self, k, v)
         self.idxs = set([self.from_idx, self.to_idx])
         if not strong:
-            self.calc_strong()
+            self._calc_strong()
 
     def same_indexes(self, other):
         return other.idxs == self.idxs
@@ -209,7 +209,7 @@ class Link(object):
     def __repr__(self):
         return str(self)
 
-    def calc_strong(self):
+    def _calc_strong(self):
         if is_square_strong_link(
                 self.puzzle, self.from_idx, self.to_idx, self.value) \
            or is_row_strong_link(

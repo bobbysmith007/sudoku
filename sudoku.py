@@ -233,6 +233,8 @@ class SudokuPuzzle (object):
             raise models.NoPossibleValues(idx)
         self.possibility_hash[idx] = pos
         if len(pos) == 1 and not self.index_solved(idx):
+            if self.stepByStep:
+                log.info('Solved %s for %s', idx, pos)
             self._solved_this_cycle = True
             self.puzzle[idx.row][idx.col] = list(pos)[0]
             if idx in self.unsolved_idxs:
@@ -250,7 +252,11 @@ class SudokuPuzzle (object):
     def remove_index_possibilities(self, idx, pos):
         if not isinstance(pos, set):
             pos = set([pos])
-        new_pos = self.get_possibilities(idx)-pos
+        old = self.get_possibilities(idx)
+        new_pos = old-pos
+        if self.stepByStep:
+            log.info('Removed Possibilities %s from %s leaving %s',
+                     pos, idx, new_pos)
         return self.set_index_possibilities(idx, new_pos)
 
     def get_possibilities(self, *idxs):

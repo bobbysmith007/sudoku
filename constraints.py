@@ -1,12 +1,11 @@
-import logging
-import itertools
-from itertools import combinations, groupby
+import logging, copy, itertools
 import models
 from models import PVALS, PIDXS, square_idxs, \
     share_a_row, share_a_col, share_a_square
 from collections import deque
 
 log = logging.getLogger('sudoku')
+
 
 def are_distinct_sets(x, y):
     return len(x & y) == 0
@@ -348,6 +347,7 @@ def xy_chain_links(puzzle):
         for i in rec([head]):
             yield i
 
+
 def xy_chain(puzzle):
     """ This loops over the puzzles xy link chains constraining """
     free = lambda x:puzzle.free_related_cells(x)
@@ -364,11 +364,13 @@ def xy_chain(puzzle):
                       (chain ,val, to_notify, map(puzzle.get_possibilities,chain)))
             return True
 
+
 def x_chain(puzzle):
     """
     http://www.sudopedia.org/wiki/X-Chain
     """
     pass
+
 
 def weak_links(puzzle, from_idx, strong_too=True):
     def pos(*x):
@@ -380,9 +382,17 @@ def weak_links(puzzle, from_idx, strong_too=True):
         vals = from_pos & to_pos
         for v in vals:
             l = models.Link(puzzle, from_idx, to, v, False, from_pos)
-            if l.strong and not strong_too:
-                continue
-            yield l
+            # all strongs are also weak, so yeild them twice, once
+            # each way
+            if l.strong:
+                wl = copy.copy(l)
+                wl.strong = False
+                yield wl
+                if not strong_too:
+                    continue
+                yield l
+            else:
+                yield l
 
 
 def strong_links(puzzle, from_idx):
@@ -413,28 +423,28 @@ def alternating_chains(puzzle):
 
 def nl_2strong(l0, l1):
     ans = l0.strong and l1.strong and l0.value != l1.value
-    if ans:
-        log.debug("2strong, l1:%s", l1)
+    #if ans: log.debug("2strong, l1:%s", l1)
     return ans
 
 
 def nl_2weak(l0, l1):
-    # not l0.strong and not l1.strong and \ ## every strong is weak
-    ans = l0.value != l1.value and len(l1.possibilities) == 2
-    if ans:
-        log.debug("2weak, l1:%s , l1.pos:%s", l1.from_idx, l1.possibilities)
+    ## every strong is weak
+    ans = not l0.strong and not l1.strong and \
+          l0.value != l1.value and len(l1.possibilities) == 2
+    #if ans: log.debug("2weak, l1:%s , l1.pos:%s", l1.from_idx, l1.possibilities)
     return ans
 
 
 def nl_weakstrong(l0, l1):
-    ans = any([l0.strong, l1.strong]) and l0.value == l1.value
-    if ans:
-        log.debug("weakstrong, %s %s", l0, l1)
+    ans = l0.strong != l1.strong and l0.value == l1.value
+    #if ans: log.debug("weakstrong, %s %s", l0, l1)
     return ans
 
 
 def nice_loops_starting_at(puzzle, from_idx):
-    chains = deque([[i] for i in weak_links(puzzle, from_idx)])
+    chains = deque(
+        [[i] for i in weak_links(puzzle, from_idx)
+         if i.strong or len(puzzle.get_possibilities(i.to_idx)) == 2])
 
     def do_chain(chain):
         prev_link = chain[-1]
@@ -443,12 +453,12 @@ def nice_loops_starting_at(puzzle, from_idx):
             # we dont want to loop back into our chain
             if lnk.to_idx in [l.from_idx for l in chain[1:]]:
                 continue
-            # found a yield able chain
-            elif len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
-                yield chain+[lnk]
             #  dont go back
             elif prev_link.same_indexes(lnk):
                 continue
+            # found a yield able chain
+            elif len(chain) > 2 and chain[0].from_idx == lnk.to_idx:
+                yield chain+[lnk]
             #  two strong links - diff valus
             elif nl_2strong(prev_link, lnk):
                 chains.append(chain+[lnk])
@@ -489,6 +499,7 @@ def nl_continuous_loop_remove(puzzle, lnk):
     return constrained
 
 def nice_loop_constrainer(puzzle, loop):
+    log.info("Constraining %s", loop)
     try:
         it = False
         it = nice_loop_constrainer_cont(puzzle, loop) or it

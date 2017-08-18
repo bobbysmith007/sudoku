@@ -19,7 +19,7 @@ def test_solve0(niceloop_puzzle0):
 
 
 def test_solve1(niceloop_puzzle1):
-    sol(niceloop_puzzle1)
+     sol(niceloop_puzzle1)
 
 
 def test_solve2(niceloop_puzzle2):
@@ -139,4 +139,27 @@ def test_nl_cont1(niceloop_cont1):
         assert before.get_possibilities(i) == p.get_possibilities(i), \
             "%s %s %s" % (i, p, p.index_solved(i))
 
-    print p.print_help()
+
+
+#http://www.paulspages.co.uk/sudokuxp/howtosolve/niceloops.htm
+def test_nl_sf_replace(niceloop_puzzle4_1):
+    p = niceloop_puzzle4_1
+    find = "[R0C3]=7=[R1C4]=6=[R6C4]=4=[R6C3]-4-[R0C3]"
+    found = False
+    idx = Index(0, 3)
+    for i in constraints.nice_loops_starting_at(p, idx):
+        assert len(i) < 8, "%s" % p.print_help()
+        if loop_matcher(find, str(i)):
+            found = i
+            break
+    assert found
+    print found
+    before = p.make_clone()
+
+    assert constraints.nice_loop_constrainer_discont(p, found)
+    assert 4 in before.get_possibilities(idx)
+    assert 4 not in p.get_possibilities(idx)
+    idxs = set(models.puzzle_range) - set([idx])
+    for i in idxs:
+        assert before.get_possibilities(i) == p.get_possibilities(i), \
+            "%s %s %s" % (i, p, p.index_solved(i))
